@@ -32,6 +32,36 @@ let NAMI = function(data, output, lifeCycle){
         return arr;
     }
 
+    let getArrayFromImage = function(image){
+        let canvas = document.createElement('canvas');
+        canvas.height = image.height;
+        canvas.width = image.width;
+
+        let ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0);
+        document.body.appendChild(canvas);
+
+        let imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+
+        
+        imageData = imageData.data.filter((value, index)=>{
+            return index % 4 == 0;
+        });
+
+        imageData = [...imageData];
+
+
+        imageData = imageData.map((value)=>{
+            return (value/255.0*(data.bathymetryMetadata.zmax-
+                data.bathymetryMetadata.zmin)+
+                data.bathymetryMetadata.zmin);
+        });
+
+        let matrix = [];
+        while(imageData.length > 0) matrix.push(imageData.splice(0, image.width));
+
+        return matrix;
+    }
     let init = (Model) => {
         
         this.model = new this.Model(data, output);
@@ -45,19 +75,41 @@ let NAMI = function(data, output, lifeCycle){
     }
 
     let loadBathymetry = function(){
-        getFile(data.bathymetry,function(fileString){
-            
-            data.bathymetry = {
-                array : parseFile(fileString)  
-            }   
-    
-            bathymetryReady = true;
-            
-            if(initialSurfaceReady){
-                init();
+        if(data.bathymetry.slice(-3)==='png'){
+            if(!data.bathymetryMetadata){
+                throw new Error('Must define data.bathymetryMetadata when using image format bathymetry');
             }
-            
-        });
+            let bathymetryImage = new Image();
+            bathymetryImage.onload = function(){
+
+                data.bathymetry = {
+                    array : getArrayFromImage(bathymetryImage)
+                }
+
+                bathymetryReady = true;
+                
+                if(initialSurfaceReady){
+                    init();
+                }
+            }
+            bathymetryImage.src = data.bathymetry;
+
+        }
+        else{
+            getFile(data.bathymetry,function(fileString){
+                
+                data.bathymetry = {
+                    array : parseFile(fileString)  
+                }   
+        
+                bathymetryReady = true;
+                
+                if(initialSurfaceReady){
+                    init();
+                }
+                
+            });
+        }
     }
 
     let loadInitialCondition = function(){
@@ -279,6 +331,7 @@ NAMI.prototype.Model = function(data, output){
     // bathymetry
     bathymetry = {
         array: data.bathymetry.array,
+        image: data.bathymetry.image,
         textureId: 0,
         texture: undefined, // to be loaded at start()
     };
