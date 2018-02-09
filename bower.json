@@ -1,0 +1,28 @@
+{
+  "name": "tsunami",
+  "homepage": "https://github.com/jgalazm/TsunamiModel",
+  "authors": [
+    "jose <jdgalazm@gmail.com>"
+  ],
+  "description": "js library for running tsunami simulations on the web browser",
+  "main": "scripts/tsunamiModel.js",
+  "keywords": [
+    "tsunami",
+    "simulation",
+    "webgl"
+  ],
+  "license": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "three.js": "^0.86.0",
+    "jquery": "^3.2.1",
+    "d3": "^4.10.0"
+  }
+}

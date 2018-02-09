@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+    crossorigin="anonymous"></script>
+
+
+</head>
+
+<body>
+  <p> A shallow water equations model</p>
+  <script src="scripts/main.js"></script>
+  <script>
+    let parameters = {
+      bathymetry: 'data/bathymetry',
+      initialSurface: 'data/initialSurface',
+      coordinates: 'cartesian',
+      waveWidth: 280,
+      waveHeight: 280,
+      displayWidth: 512,
+      displayHeight: 512,
+      dx: 0.5,
+      dy: 0.5,
+      xmin: -70,
+      xmax: 69.5,
+      ymin: -70,
+      ymax: 69.5,
+    }
+
+    let thismodel = new model(parameters);
+    thismodel.init();
+  </script>
+</body>
+
+</html>
