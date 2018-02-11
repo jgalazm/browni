@@ -39,15 +39,13 @@ let NAMI = function(data, output, lifeCycle){
 
         let ctx = canvas.getContext('2d');
         ctx.drawImage(image, 0, 0);
-        document.body.appendChild(canvas);
-
         let imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
-
         
         imageData = imageData.data.filter((value, index)=>{
             return index % 4 == 0;
         });
 
+        // convert to normal float numbers
         imageData = [...imageData];
 
 
@@ -75,7 +73,7 @@ let NAMI = function(data, output, lifeCycle){
     }
 
     let loadBathymetry = function(){
-        if(data.bathymetry.slice(-3)==='png'){
+        if(data.bathymetry.slice(-3)==='png' || data.bathymetry.slice(-3)==='jpg'){
             if(!data.bathymetryMetadata){
                 throw new Error('Must define data.bathymetryMetadata when using image format bathymetry');
             }
