@@ -62,12 +62,11 @@ let NAMI = function(data, output, lifeCycle){
     }
     let init = (Model) => {
         
-        if (lifeCycle.dataWasLoaded !== undefined){
-            lifeCycle.dataWasLoaded(data);
-        }
         this.model = new this.Model(data, output);
 
-        document.body.appendChild(this.model.canvas);
+        if (lifeCycle.dataWasLoaded !== undefined){
+            lifeCycle.dataWasLoaded(this.model);
+        }
 
         this.controller = new this.Controller(this.model,output, lifeCycle);
 
@@ -398,8 +397,8 @@ NAMI.prototype.Model = function(data, output){
     [ 1.        ,  1.        ,  1.        ,  1.001     ],
     [ 1.        ,  0.25098039,  0.76862745,  2.25      ]];
     
-    let cmin = -2;
-    let cmax = 2;
+    let cmin = -0.2;
+    let cmax = 0.2;
     
     colors = [[ 0.        ,  0.        ,  0.3 ,  0.0       *(cmax-cmin)+cmin],
     [ 0.        ,  0.        ,  0.48666667,  0.06666667*(cmax-cmin)+cmin],
@@ -1305,7 +1304,7 @@ NAMI.prototype.Model = function(data, output){
 
                 vec3 color = getPseudoColor(uij);
 
-                gl_FragColor  = vec4(color, 1.0);
+                gl_FragColor  = vec4(color, 0.9);
             }    
         `);        
         initialProgram = shaderProgram(vertexShader, initialShader);
