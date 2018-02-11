@@ -62,6 +62,9 @@ let NAMI = function(data, output, lifeCycle){
     }
     let init = (Model) => {
         
+        if (lifeCycle.dataWasLoaded !== undefined){
+            lifeCycle.dataWasLoaded(data);
+        }
         this.model = new this.Model(data, output);
 
         document.body.appendChild(this.model.canvas);
