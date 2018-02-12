@@ -1304,7 +1304,8 @@ NAMI.prototype.Model = function(data, output){
 
                 vec3 color = getPseudoColor(uij);
 
-                gl_FragColor  = vec4(color, 0.9);
+                float alpha  = pow(abs(uij),0.2);
+                gl_FragColor  = vec4(color, alpha);
             }    
         `);        
         initialProgram = shaderProgram(vertexShader, initialShader);
