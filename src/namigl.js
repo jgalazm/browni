@@ -1653,8 +1653,9 @@ NAMI.prototype.Model = function(data, output){
         });
     }
 
-    let exportBuffer = function(fbo, variableIndex=0){
-        let array = readFBOPixels(fbo,0,0,discretization.numberOfCells[0],discretization.numberOfCells[1]);
+    let exportBuffer = function(fbo, variableIndex=0, iStart=0, jStart = 0, 
+         Lx = discretization.numberOfCells[0], Ly = discretization.numberOfCells[1]){
+        let array = readFBOPixels(fbo, iStart, jStart, Lx, Ly);
         array = array.filter((elem,index)=>{
             return (index-variableIndex) % 4 == 0;
         });
@@ -1756,6 +1757,19 @@ NAMI.prototype.Model = function(data, output){
     return {
         domain,
         discretization,
+        bathymetry,
+        getCellBathymetry: (i,j) =>{
+            return exportBuffer(wave.first.fbo, i, j, 1, 1);
+        },
+        getRectangleBathymetry: (iStart, jStart, iEnd, jEnd)=>{
+            let rectangle = exportBuffer(wave.first.fbo, 3, iStart, jStart, iEnd-iStart+1, jEnd - jStart+1);
+            rectangle = [... rectangle];
+            let matrixRectangle = [];
+
+            while (rectangle.length > 0) matrixRectangle.push(rectangle.splice(0, iEnd-iStart+1));
+
+            return matrixRectangle;
+        },
         get currentTime(){
             return discretization.stepNumber * discretization.dt;
         },
