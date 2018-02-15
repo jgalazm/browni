@@ -1787,7 +1787,8 @@ NAMI.prototype.Model = function(data, output){
         pois,
         runSimulationStep,
         displayPColor: ()=>{renderDisplayProgram()},
-        displayOption
+        displayOption,
+        colors
     }
 
 }
