@@ -1405,7 +1405,14 @@ NAMI.prototype.Model = function(data, output){
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
         gl.viewport(0, 0, w, h);
         gl.clear(gl.COLOR_BUFFER_BIT);
-        return {texture, fbo, textureId};
+
+
+        let clearBuffer = () => {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+            gl.clearColor(0,0,0,1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+        return {texture, fbo, textureId, clearBuffer};
     }
 
     let createDoubleFBO = function(textureId1, textureId2, w, h,internalFormat, format, type, param ){
@@ -1424,6 +1431,10 @@ NAMI.prototype.Model = function(data, output){
                 let temp = fbo1;
                 fbo1 = fbo2;
                 fbo2 = temp;
+            },
+            clearBuffers: ()=>{
+                fbo1.clearBuffer();
+                fbo2.clearBuffer();
             }
         }
     }
@@ -1759,7 +1770,7 @@ NAMI.prototype.Model = function(data, output){
         discretization,
         bathymetry,
         getCellBathymetry: (i,j) =>{
-            return exportBuffer(wave.first.fbo, i, j, 1, 1);
+            return exportBuffer(wave.first.fbo, 3, i, j, 1, 1);
         },
         getRectangleBathymetry: (iStart, jStart, iEnd, jEnd)=>{
             let rectangle = exportBuffer(wave.first.fbo, 3, iStart, jStart, iEnd-iStart+1, jEnd - jStart+1);
@@ -1788,7 +1799,17 @@ NAMI.prototype.Model = function(data, output){
         runSimulationStep,
         displayPColor: ()=>{renderDisplayProgram()},
         displayOption,
-        colors
+        colors,
+        set newEarthquake(newEarthquake){
+            console.log(gl);
+            wave.clearBuffers();
+            earthquake = newEarthquake;
+            renderEarthquake();
+            renderDisplayProgram();
+            discretization.stepNumber = 0;
+
+
+        }
     }
 
 }
