@@ -10,12 +10,17 @@ let NAMI = function(data, output, lifeCycle){
 
 
     let getFile = function(url, callback){
-        $.ajax({
-            dataType: 'text',
-            url: url,
-            async: true,
-            success: callback,
-        });
+        var req = new XMLHttpRequest();
+        req.open('GET', url, true);
+        req.onreadystatechange = function (aEvt) {
+          if (req.readyState == 4) {
+             if(req.status == 200)
+               callback(req.responseText);
+             else
+                console.log("Error loading file \n"+url);
+          }
+        };
+        req.send(null);
     }
     
     let parseFile = function(data){
