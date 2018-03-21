@@ -10,17 +10,34 @@ let NAMI = function(data, output, lifeCycle){
 
 
     let getFile = function(url, callback){
-        var req = new XMLHttpRequest();
-        req.open('GET', url, true);
-        req.onreadystatechange = function (aEvt) {
-          if (req.readyState == 4) {
-             if(req.status == 200)
-               callback(req.responseText);
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = "blob";
+
+        xhr.onreadystatechange = function (aEvt) {
+          if (xhr.readyState == 4) {
+             if(xhr.status == 200){
+                 console.log(xhr.response.size)
+                 let myReader = new FileReader();
+                 myReader.addEventListener("progress", function(e){
+                    console.log(e.srcElement.result.length);
+                 });
+
+                 myReader.addEventListener("loadend", function(e){
+                    console.log(e.srcElement.result.length,'end');
+                
+                 });
+                 myReader.readAsText(xhr.response);
+
+
+             }
              else
                 console.log("Error loading file \n"+url);
           }
+
         };
-        req.send(null);
+
+           xhr.send(null);
     }
     
     let parseFile = function(data){
