@@ -442,8 +442,8 @@ NAMI.prototype.Model = function(data, output){
     [ 1.        ,  1.        ,  1.        ,  1.001     ],
     [ 1.        ,  0.25098039,  0.76862745,  2.25      ]];
     
-    let cmin = -0.2;
-    let cmax = 0.2;
+    let cmin = 0;
+    let cmax = 24*60*60;
     
     colors = [[ 0.        ,  0.        ,  0.3 ,  0.0       *(cmax-cmin)+cmin],
     [ 0.        ,  0.        ,  0.48666667,  0.06666667*(cmax-cmin)+cmin],
@@ -1287,11 +1287,13 @@ NAMI.prototype.Model = function(data, output){
 
                 float newHeight = texture2D(wave, vUv).r;
 
+                float depth = texture2D(wave, vUv).a;
+
                 if( maxHeight < newHeight){
                     maxHeight = newHeight;
                 }
                 
-                if(arrivalTime == 0.0 && newHeight > 1e-5){
+                if(arrivalTime == 0.0 && newHeight > 1e-5 && depth > 100.0){
                     arrivalTime = currentTime;
                 }
                 gl_FragColor = vec4( maxHeight, arrivalTime, 0.0, 1.0);
