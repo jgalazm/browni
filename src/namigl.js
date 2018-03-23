@@ -9,38 +9,7 @@ let NAMI = function(data, output, lifeCycle){
     let initialSurfaceReady = false;
 
 
-    let getFile = function(url, callback){
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.responseType = "blob";
-
-        xhr.onreadystatechange = function (aEvt) {
-          if (xhr.readyState == 4) {
-             if(xhr.status == 200){
-                 console.log(xhr.response.size)
-                 let myReader = new FileReader();
-                 myReader.addEventListener("progress", function(e){
-                    console.log(e.srcElement.result.length);
-                 });
-
-                 myReader.addEventListener("loadend", function(e){
-                    console.log(e.srcElement.result.length,'end');
-                
-                 });
-                 myReader.readAsText(xhr.response);
-
-
-             }
-             else
-                console.log("Error loading file \n"+url);
-          }
-
-        };
-
-           xhr.send(null);
-    }
-    
-    let parseFile = function(data){
+    let stringToArray = function(data){
         data = data.split('\n');
         let arr = data.map(function(row){
             return row.split(/(\s+)/).filter( function(e) {
@@ -54,6 +23,59 @@ let NAMI = function(data, output, lifeCycle){
         return arr;
     }
 
+    let getStringFromFile = function(url, callback){
+        let xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'text';
+
+        xhr.onload = (e)=>{
+            callback(xhr.responseText);
+        }
+        xhr.send();
+    }
+
+    let rowToMatrix = function( arr, ncols, nrows){
+      let newArr = [];
+      while(arr.length) newArr.push(arr.splice(0,nrows));
+      return newArr;
+    }
+
+    let getArrayFromFile = function(url, callback, format='ascii'){        
+        
+        
+      if(format == 'ascii'){
+          getStringFromFile(url, (string)=>{
+              let array = stringToArray(string);
+              callback(array);
+          });
+      }
+      else if(format == 'binary'){
+
+          const xhr = new XMLHttpRequest();
+          xhr.open("GET", url, true);
+          xhr.responseType = 'arraybuffer';
+
+          xhr.onload = (e)=>{
+              const blob = new Blob([xhr.response], {type: "application"});
+              const fileReader = new FileReader();
+              let arrayBuffer;
+
+              fileReader.onload = (event) =>{
+                  arrayBuffer = event.target.result;
+                  let arr = [... new Float64Array(arrayBuffer)];
+                  arr = rowToMatrix( arr.slice(2,arr.length-1), arr[0], arr[1]);
+
+                  
+                  callback(arr);
+  
+              }
+              fileReader.readAsArrayBuffer(blob);
+          }
+
+          xhr.send();
+      }
+    }
+    
     let getArrayFromImage = function(image){
         let canvas = document.createElement('canvas');
         canvas.height = image.height;
@@ -82,6 +104,7 @@ let NAMI = function(data, output, lifeCycle){
 
         return matrix;
     }
+
     let init = (Model) => {
         
         this.model = new this.Model(data, output);
@@ -118,10 +141,10 @@ let NAMI = function(data, output, lifeCycle){
 
         }
         else{
-            getFile(data.bathymetry,function(fileString){
+            getArrayFromFile(data.bathymetry,function(array){
                 
                 data.bathymetry = {
-                    array : parseFile(fileString)  
+                    array : array 
                 }   
         
                 bathymetryReady = true;
@@ -130,7 +153,7 @@ let NAMI = function(data, output, lifeCycle){
                     init();
                 }
                 
-            });
+            }, data.binaryBathymetry ? 'binary':'ascii');
         }
     }
 
@@ -140,10 +163,10 @@ let NAMI = function(data, output, lifeCycle){
         Otherwise throws an error */
         if( data.initialSurface != undefined){
 
-            getFile(data.initialSurface,function(fileString){
+            getArrayFromFile(data.initialSurface,function(array){
                 
                 data.initialSurface = {
-                    array : parseFile(fileString)
+                    array : array
                 }
         
                 initialSurfaceReady = true;
@@ -152,12 +175,12 @@ let NAMI = function(data, output, lifeCycle){
                     init();
                 }
                 
-            });
+            },'ascii');
         }
         else if( data.earthquake != undefined){
             if(typeof(data.earthquake)==="string"){
                 
-                getFile(data.earthquake, fileString => {
+                getStringFromFile(data.earthquake, fileString => {
                     let earthquake = fileString.split('\n');
                     let keys = earthquake[0].split(',');
                     let key2column = {};
