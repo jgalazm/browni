@@ -443,8 +443,8 @@ NAMI.prototype.Model = function(data, output){
     [ 1.        ,  1.        ,  1.        ,  1.001     ],
     [ 1.        ,  0.25098039,  0.76862745,  2.25      ]];
     
-    let cmin = -0.5;
-    let cmax = 0.5;
+    let cmin = -0.1;
+    let cmax = 0.1;
     
     colors = [[ 0.        ,  0.        ,  0.3 ,  0.0       *(cmax-cmin)+cmin],
     [ 0.        ,  0.        ,  0.48666667,  0.06666667*(cmax-cmin)+cmin],
