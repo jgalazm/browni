@@ -8,9 +8,15 @@ let Controller = function(model,data, lifeCycle){
         if( typeof lifeCycle.controllerSimulationDidFinish !== 'undefined'){
             controllerSimulationDidFinish = lifeCycle.controllerSimulationDidFinish;
         }
+        else{
+            controllerSimulationDidFinish = ()=>{};
+        }
 
         if( typeof lifeCycle.modelStepDidFinish !== 'undefined'){
             modelStepDidFinish = lifeCycle.modelStepDidFinish;
+        }
+        else{
+            modelStepDidFinish = ()=>{};
         }
     }
 
