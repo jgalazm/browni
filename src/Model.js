@@ -1,10 +1,10 @@
 let Model = function(data, output){
     let gl, isWebGL2;
     let vertexShader, initialShader, okadaShader, cartesianWaveShader, 
-    sphericalWaveShader, maxHeightsShader,displayShader;
+    sphericalWaveShader, maxHeightsShader,displayShader, alphaShader;
     
     let initialProgram, okadaProgram, cartesianWaveProgram, 
-    sphericalWaveProgram, maxHeightsProgram, displayProgram  ;
+    sphericalWaveProgram, maxHeightsProgram, displayProgram, alphaProgram  ;
 
     
     let domain, bathymetry, discretization, initialSurface, earthquake, wave, maxHeights, pcolorDisplay, pois, colors;
@@ -138,10 +138,21 @@ let Model = function(data, output){
 
     */
 
-    let canvas = document.createElement("canvas");
-    canvas.width = pcolorDisplay.width;
-    canvas.height = pcolorDisplay.height;
+    let createCanvas = ()=>{
+        let canvas = document.createElement("canvas");
+        canvas.width = pcolorDisplay.width;
+        canvas.height = pcolorDisplay.height;
+        return canvas;
+    }
 
+    
+    let canvasPcolor = createCanvas();
+    let ctxPcolor = canvasPcolor.getContext("2d"); 
+    
+    let canvasAlpha = createCanvas();
+    let ctxAlpha = canvasAlpha.getContext("2d"); 
+    
+    let canvas = createCanvas();
     try
     {
         gl = canvas.getContext("webgl2");
@@ -999,8 +1010,33 @@ let Model = function(data, output){
 
                 vec3 color = getPseudoColor(uij);
 
+                // float alpha  = pow(abs(uij),0.2);
+                gl_FragColor  = vec4(color, 1.0);
+            }    
+        `);
+        alphaShader = compileShader(gl.FRAGMENT_SHADER,`
+            precision highp float;
+            
+            uniform sampler2D field;
+            uniform int displayedChannel;
+            
+            varying vec2 vUv;
+
+            void main()
+            { 
+                float uij  = texture2D(field, vUv).r;
+                if(displayedChannel == 1){
+                    uij = texture2D(field, vUv).g;
+                }
+                else if(displayedChannel == 2){
+                    uij = texture2D(field, vUv).b;
+                }
+                else if(displayedChannel == 3){
+                    uij = texture2D(field, vUv).a;
+                }
+
                 float alpha  = pow(abs(uij),0.2);
-                gl_FragColor  = vec4(color, alpha);
+                gl_FragColor  = vec4(alpha, 0.0, 0.0, 1.0);
             }    
         `);        
         initialProgram = shaderProgram(vertexShader, initialShader);
@@ -1008,6 +1044,7 @@ let Model = function(data, output){
         cartesianWaveProgram = shaderProgram(vertexShader, cartesianWaveShader);
         sphericalWaveProgram = shaderProgram(vertexShader, sphericalWaveShader);
         displayProgram = shaderProgram(vertexShader, displayShader);
+        alphaProgram = shaderProgram(vertexShader, alphaShader);
         maxHeightsProgram = shaderProgram(vertexShader, maxHeightsShader);
     }
 
@@ -1136,6 +1173,7 @@ let Model = function(data, output){
 
 
     let renderFrameBuffer = function(frameBuffer){
+
         gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
         gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
     }
@@ -1265,6 +1303,7 @@ let Model = function(data, output){
     }
         
     let renderDisplayProgram = function(){
+        /* calculates rgb colors for the pcolormap given a field (heights, maxheights-arrivals) */
         
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         gl.useProgram(displayProgram.program);
@@ -1283,6 +1322,30 @@ let Model = function(data, output){
 
         renderFrameBuffer(null);
 
+        ctxPcolor.drawImage(canvas, 0, 0);
+
+    }
+
+    let renderAlphaProgram = function(){
+        /* calculates alpha for the pcolor separately given a field (as in renderDisplayProgram */
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        gl.useProgram(alphaProgram.program);
+        
+        let displayedChannel = 0 ;
+        if( displayOption === 'heights'){
+            gl.uniform1i(alphaProgram.uniforms.field, wave.first.textureId );//TDDO: fix texid
+        }
+        else if( displayOption === 'max heights' || displayOption === 'arrival times'){
+
+            gl.uniform1i(alphaProgram.uniforms.field, maxHeights.first.textureId );
+            if(displayOption === 'arrival times') displayedChannel = 1;
+        }
+
+        gl.uniform1i(alphaProgram.uniforms.displayedChannel, displayedChannel)
+
+        renderFrameBuffer(null);  
+        
+        ctxAlpha.drawImage(canvas, 0, 0);
     }
 
     let initFBOs = function(){
@@ -1310,6 +1373,8 @@ let Model = function(data, output){
         renderMaxHeightsProgram();
 
         renderDisplayProgram();
+
+        renderAlphaProgram();
     }
 
     let readFBOPixels = function (frameBufferObject, left, top, width, height) {
@@ -1481,6 +1546,8 @@ let Model = function(data, output){
         },
         setTimeStep,
         canvas,
+        canvasAlpha,
+        canvasPcolor,
         get currentGridHeights(){
             return exportBuffer(wave.first.fbo);
         },
@@ -1492,7 +1559,8 @@ let Model = function(data, output){
         },
         pois,
         runSimulationStep,
-        displayPColor: ()=>{renderDisplayProgram()},
+        displayPcolor: ()=>{renderDisplayProgram()},
+        displayAlpha: () =>{renderAlphaProgram()},
         displayOption,
         colors,
         set newEarthquake(newEarthquake){

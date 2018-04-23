@@ -73,7 +73,10 @@ let Controller = function(model,data, lifeCycle){
             
         modelStepDidFinish(model, thisController);
 
-        model.displayPColor();
+        model.displayPcolor();
+        
+        model.displayAlpha();
+        
         /********************* */
 
 
