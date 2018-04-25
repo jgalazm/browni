@@ -1000,7 +1000,7 @@ let Model = function(data, output){
                 vec3 color = getPseudoColor(uij);
 
                 float alpha  = pow(abs(uij),0.2);
-                gl_FragColor  = vec4(color, alpha);
+                gl_FragColor  = vec4(color, 1.0);
             }    
         `);        
         initialProgram = shaderProgram(vertexShader, initialShader);
