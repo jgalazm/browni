@@ -69,9 +69,12 @@ let Controller = function(model,data, lifeCycle){
     let animate = () => {
 
         /********************* */
-        model.runSimulationStep();                
-            
-        modelStepDidFinish(model, thisController);
+        let loop = true;
+        while(loop){
+            model.runSimulationStep();                
+                
+            loop = modelStepDidFinish(model, thisController);
+        }
 
         model.displayPColor();
         /********************* */
