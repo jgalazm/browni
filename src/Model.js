@@ -144,10 +144,10 @@ let Model = function(data, output){
 
     try
     {
-        gl = canvas.getContext("webgl2");
+        gl = canvas.getContext("webgl2", { premultipliedAlpha: false });
         isWebGL2 = !!gl;
         if (!isWebGL2) {
-            gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            gl = canvas.getContext('webgl', { premultipliedAlpha: false }) || canvas.getContext('experimental-webgl', { premultipliedAlpha: false });
         }
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
