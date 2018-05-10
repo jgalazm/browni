@@ -194,22 +194,14 @@ let driver = function(data, output, lifeCycle){
 
                     for(let i = 0; i<earthquake.length; i++){
                         let finiteFault = earthquake[i].split(',');
-                        if(earthquake[i].length == 0){}
-                        earthquake[i] ={
-                            L: parseFloat(finiteFault[key2column['L']]),
-                            W: parseFloat(finiteFault[key2column['W']]),
-                            depth: parseFloat(finiteFault[key2column['depth']]),
-                            slip: parseFloat(finiteFault[key2column['slip']]),
-                            strike: parseFloat(finiteFault[key2column['strike']]),
-                            dip: parseFloat(finiteFault[key2column['dip']]),
-                            rake: parseFloat(finiteFault[key2column['rake']]),
-                            U3: 0.0,
-                            cn: parseFloat(finiteFault[key2column['lat']]),
-                            ce: parseFloat(finiteFault[key2column['lon']]),
-                            reference: finiteFault[key2column['reference']]
-                        }
+                        keys.map((key)=>{
+                            earthquake[i][key] = (key != 'reference')? 
+                                                parseFloat(finiteFault[key2column[key]]) : 
+                                                finiteFault[key2column[key]]
+                        });
+                        
                     }
-                    console.log(earthquake);
+
                     data.earthquake = earthquake;
 
                     initialSurfaceReady = true;
