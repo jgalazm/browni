@@ -1,3 +1,5 @@
+import {getLengthWidthSlip} from './Earthquake'
+
 let Model = function(data, output){
     let gl, isWebGL2;
     let vertexShader, initialShader, okadaShader, cartesianWaveShader, 
@@ -59,9 +61,19 @@ let Model = function(data, output){
     else if(data.earthquake){
         earthquake = data.earthquake;
 
-        // longitude should be in [0,360]
+        // assign missing parameters
         for(let i = 0; i<earthquake.length; i++){
             earthquake[i].ce = earthquake[i].ce;
+
+            if( earthquake[i].Mw != undefined && 
+                !(earthquake[i].L != undefined && 
+                    earthquake[i].W != undefined && 
+                    earthquake[i].slip != undefined ) ){
+                const LWslip = getLengthWidthSlip(earthquake[i].Mw)
+                earthquake[i].L = LWslip.L;
+                earthquake[i].W = LWslip.W;
+                earthquake[i].slip = LWslip.slip;
+            }
         }
     }
             

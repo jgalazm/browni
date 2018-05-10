@@ -194,11 +194,13 @@ let driver = function(data, output, lifeCycle){
 
                     for(let i = 0; i<earthquake.length; i++){
                         let finiteFault = earthquake[i].split(',');
+                        let earthquakeDict = {};
                         keys.map((key)=>{
-                            earthquake[i][key] = (key != 'reference')? 
+                            earthquakeDict[key] = (key != 'reference')? 
                                                 parseFloat(finiteFault[key2column[key]]) : 
                                                 finiteFault[key2column[key]]
                         });
+                        earthquake[i] = earthquakeDict;
                         
                     }
 

@@ -14,4 +14,4 @@ function getLengthWidthSlip(Mw){
     return {L:L, W:W, slip:slip}
 }
 
-export {Mw2Mo, getLengthWidthSlip};
+export {getLengthWidthSlip};
