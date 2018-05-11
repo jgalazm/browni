@@ -4,6 +4,8 @@ let Controller = function(model,data, lifeCycle){
     
     let controllerSimulationDidFinish, modelStepDidFinish;
 
+    let paused = false;
+
     if( typeof lifeCycle !== 'undefined'){
         if( typeof lifeCycle.controllerSimulationDidFinish !== 'undefined'){
             controllerSimulationDidFinish = lifeCycle.controllerSimulationDidFinish;
@@ -69,11 +71,15 @@ let Controller = function(model,data, lifeCycle){
     let animate = () => {
 
         /********************* */
-        let loop = true;
-        while(loop){
+        if(paused){
+            requestAnimationFrame(animate);
+            return;
+        }
+        let exitLoop = true;
+        while(exitLoop){
             model.runSimulationStep();                
                 
-            loop = modelStepDidFinish(model, thisController);
+            exitLoop = modelStepDidFinish(model, thisController);
         }
 
         model.displayPColor();
@@ -101,6 +107,12 @@ let Controller = function(model,data, lifeCycle){
 
     thisController = {
         animate,
+        togglePause: ()=>{
+            paused = !paused;
+        },
+        get paused(){
+            return paused;
+        },
         downloadCurrentGridHeights: ()=> {
             downloadGridArray(model.currentGridHeights,
                 model.discretization.stepNumber*model.discretization.dt);

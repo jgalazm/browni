@@ -13,6 +13,7 @@ let Model = function(data, output){
     
     let displayOption = output.displayOption ? output.displayOption : 'heights';
 
+   
     // domain
     domain = {
         coordinates : data.coordinates,
