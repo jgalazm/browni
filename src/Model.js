@@ -61,21 +61,6 @@ let Model = function(data, output){
     }
     else if(data.earthquake){
         earthquake = data.earthquake;
-
-        // assign missing parameters
-        for(let i = 0; i<earthquake.length; i++){
-            earthquake[i].ce = earthquake[i].ce;
-
-            if( earthquake[i].Mw != undefined && 
-                !(earthquake[i].L != undefined && 
-                    earthquake[i].W != undefined && 
-                    earthquake[i].slip != undefined ) ){
-                const LWslip = getLengthWidthSlip(earthquake[i].Mw)
-                earthquake[i].L = LWslip.L;
-                earthquake[i].W = LWslip.W;
-                earthquake[i].slip = LWslip.slip;
-            }
-        }
     }
             
 
@@ -1447,6 +1432,25 @@ let Model = function(data, output){
         
     }
 
+
+    let setEarthquake = ()=>{
+        if(earthquake){
+            for(let i = 0; i<earthquake.length; i++){
+                earthquake[i].ce = earthquake[i].ce;
+    
+                if( earthquake[i].Mw != undefined && 
+                    !(earthquake[i].L != undefined && 
+                        earthquake[i].W != undefined && 
+                        earthquake[i].slip != undefined ) ){
+                    const LWslip = getLengthWidthSlip(earthquake[i].Mw)
+                    earthquake[i].L = LWslip.L;
+                    earthquake[i].W = LWslip.W;
+                    earthquake[i].slip = LWslip.slip;
+                }
+            }   
+        }
+
+    }
     let start = function(){
 
         bathymetry.texture = createTextureFromMatrix (
@@ -1464,10 +1468,13 @@ let Model = function(data, output){
         createShaders();
 
         createBuffers();
+        
+        setEarthquakes();
 
         initFBOs();
         
         setPOIs();
+
 
     }
 
@@ -1515,6 +1522,8 @@ let Model = function(data, output){
             renderEarthquake();
             renderDisplayProgram();
             discretization.stepNumber = 0;
+
+            setEarthquake();
         },
         earthquake
     }

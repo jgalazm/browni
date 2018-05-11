@@ -70,11 +70,18 @@ let Controller = function(model,data, lifeCycle){
 
     let animate = () => {
 
-        /********************* */
         if(paused){
             requestAnimationFrame(animate);
             return;
         }
+
+
+        if(model.discretization.stepNumber == 0){
+            if(lifeCycle.modelSimulationWillStart)
+                lifeCycle.modelSimulationWillStart(model, thisController);
+        }
+
+        /********************* */
         let exitLoop = true;
         while(exitLoop){
             model.runSimulationStep();                
