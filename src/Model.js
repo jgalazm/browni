@@ -1432,6 +1432,34 @@ let Model = function(data, output){
         
     }
 
+    let getSlabParameters = (lon, lat) => {
+        if(slab == undefined){
+            return;
+        }
+
+        let calcDistance = (p1,p2) =>{
+            return (p1[0]-p2[0])*(p1[0]-p2[0]) + (p1[1]-p2[1])*(p1[1]-p2[1]);
+        };
+        let xslab = slab['x'][0]>180? slab['x'][0]-360 : slab['x'][0];
+
+        let minDistance = calcDistance( [ xslab, slab['y'][0]], [lon,lat]);
+        let minDistanceLocation = 0;
+        for(let i = 1 ; i< slab['x'].length; i++){
+            xslab = slab['x'][i]>180? slab['x'][i]-360 : slab['x'][i];
+            let newMinDistance = calcDistance( [ xslab, slab['y'][i]], [lon,lat]);
+            if(newMinDistance < minDistance){
+                minDistance = newMinDistance;
+                minDistanceLocation = i;
+            }
+        }
+        return {
+            depth: slab['depth'][minDistanceLocation],
+            dip: slab['dip'][minDistanceLocation],
+            strike: slab['strike'][minDistanceLocation],
+            distance: minDistance,
+            minDistanceLocation: minDistanceLocation
+        }
+    };
 
     let setEarthquake = ()=>{
         if(earthquake){
@@ -1446,6 +1474,14 @@ let Model = function(data, output){
                     earthquake[i].L = LWslip.L;
                     earthquake[i].W = LWslip.W;
                     earthquake[i].slip = LWslip.slip;
+
+                    const slabInfo = getSlabParameters(earthquake[i].ce, earthquake[i].cn);
+                    if(slabInfo){
+                        earthquake[i].depth = slabInfo.depth*1000;
+                        earthquake[i].dip = slabInfo.dip;
+                        earthquake[i].strike = slabInfo.strike;
+                        console.log(earthquake[i].depth, earthquake[i].dip, earthquake[i].strike);
+                    }
                 }
             }   
         }
@@ -1469,7 +1505,7 @@ let Model = function(data, output){
 
         createBuffers();
         
-        setEarthquakes();
+        setEarthquake();
 
         initFBOs();
         
@@ -1519,11 +1555,11 @@ let Model = function(data, output){
             console.log(gl);
             wave.clearBuffers();
             earthquake = newEarthquake;
+            setEarthquake();
             renderEarthquake();
             renderDisplayProgram();
             discretization.stepNumber = 0;
 
-            setEarthquake();
         },
         earthquake
     }
