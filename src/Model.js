@@ -1514,9 +1514,8 @@ let Model = function(data, output){
             renderEarthquake();
             renderDisplayProgram();
             discretization.stepNumber = 0;
-
-
-        }
+        },
+        earthquake
     }
 
 }

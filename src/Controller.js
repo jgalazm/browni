@@ -85,6 +85,12 @@ let Controller = function(model,data, lifeCycle){
             requestAnimationFrame(animate);
             
         }
+        else if(data.loop){
+
+            model.newEarthquake = model.earthquake;
+            requestAnimationFrame(animate);
+
+        }
         else{
 
             controllerSimulationDidFinish(model, thisController);
