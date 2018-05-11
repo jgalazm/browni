@@ -70,15 +70,16 @@ let Controller = function(model,data, lifeCycle){
 
     let animate = () => {
 
+        
+        
+        if(model.discretization.stepNumber == 0){
+            if(lifeCycle.modelSimulationWillStart)
+            lifeCycle.modelSimulationWillStart(model, thisController);
+        }
+
         if(paused){
             requestAnimationFrame(animate);
             return;
-        }
-
-
-        if(model.discretization.stepNumber == 0){
-            if(lifeCycle.modelSimulationWillStart)
-                lifeCycle.modelSimulationWillStart(model, thisController);
         }
 
         /********************* */
@@ -116,6 +117,9 @@ let Controller = function(model,data, lifeCycle){
         animate,
         togglePause: ()=>{
             paused = !paused;
+        },
+        set paused(value){
+            paused = value;
         },
         get paused(){
             return paused;
