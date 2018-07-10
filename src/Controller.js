@@ -2,7 +2,7 @@ let Controller = function(model,data, lifeCycle){
     let thisController = {};
 
     
-    let controllerSimulationDidFinish, modelStepDidFinish;
+    let controllerSimulationDidFinish, modelStepDidFinish, iterationDidFinish;
 
     let paused = false;
 
@@ -20,6 +20,13 @@ let Controller = function(model,data, lifeCycle){
         else{
             modelStepDidFinish = ()=>{};
         }
+
+        if( typeof lifeCycle.iterationDidFinish !== 'undefined'){
+            iterationDidFinish = lifeCycle.iterationDidFinish;
+        }
+        else{
+            iterationDidFinish = (model, controller, animate)=>{  requestAnimationFrame(animate); };
+        }        
     }
 
     let downloadGridArray = function(array, time){
@@ -96,13 +103,13 @@ let Controller = function(model,data, lifeCycle){
 
         if(model.currentTime<data.stopTime){
             
-            requestAnimationFrame(animate);
+            iterationDidFinish(model, thisController, animate);
             
         }
         else if(data.loop){
 
             model.newEarthquake = model.earthquake;
-            requestAnimationFrame(animate);
+            iterationDidFinish(model, thisController, animate);
 
         }
         else{
