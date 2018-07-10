@@ -1,7 +1,7 @@
 import {Controller} from './Controller';
 import {Model} from './Model';
 
-let driver = function(data, output, lifeCycle){
+let app = function(data, output, lifeCycle){
 
     let handler = this;
     let bathymetryReady = false;
@@ -233,4 +233,4 @@ let driver = function(data, output, lifeCycle){
 
 }
 
-export {driver};
+export {app};
