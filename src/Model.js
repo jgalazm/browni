@@ -8,10 +8,10 @@ let Model = function(data, output){
     let initialProgram, okadaProgram, cartesianWaveProgram, 
     sphericalWaveProgram, maxHeightsProgram, displayProgram  ;
 
-    
-    let domain, bathymetry, discretization, initialSurface, earthquake, wave, maxHeights, pcolorDisplay, pois, colors;
-    
-    let displayOption = output.displayOption ? output.displayOption : 'heights';
+    let domain, bathymetry, discretization, initialSurface, earthquake;
+    let wave, maxHeights, pcolorDisplay;
+    let displayOption, pois, colors;
+    let defaultColors;
 
    
     // domain
@@ -68,10 +68,12 @@ let Model = function(data, output){
         width : data.displayWidth,
         height : data.displayHeight
     };
+    
+    displayOption = output.displayOption ? output.displayOption : 'heights';
 
     pois = output.pois ? output.pois : {};
 
-    colors = [[ 0.01568627,  0.11372549,  0.23137255,  0.        ],
+    defaultColors = [[ 0.01568627,  0.11372549,  0.23137255,  0.        ],
     [ 0.03137255,  0.23137255,  0.4627451 ,  0.01      ],
     [ 0.09411765,  0.30196078,  0.61568627,  0.011     ],
     [ 0.23137255,  0.41568627,  0.8       ,  0.05      ],
@@ -91,7 +93,7 @@ let Model = function(data, output){
     let cmin = -0.5;
     let cmax = 0.5;
     
-    colors = [[ 0.        ,  0.        ,  0.3 ,  0.0       *(cmax-cmin)+cmin],
+    defaultColors = [[ 0.        ,  0.        ,  0.3 ,  0.0       *(cmax-cmin)+cmin],
     [ 0.        ,  0.        ,  0.48666667,  0.06666667*(cmax-cmin)+cmin],
     [ 0.        ,  0.        ,  0.67333333,  0.13333333*(cmax-cmin)+cmin],
     [ 0.        ,  0.        ,  0.86      ,  0.2       *(cmax-cmin)+cmin],
@@ -108,7 +110,7 @@ let Model = function(data, output){
     [ 0.63333333,  0.        ,  0.        ,  0.93333333*(cmax-cmin)+cmin],
     [ 0.5       ,  0.        ,  0.        ,  1.0       *(cmax-cmin)+cmin]];
     
-    colors = [[ 0.        ,  0.        ,  1.        ,  0.        *(cmax-cmin)+cmin],
+    defaultColors = [[ 0.        ,  0.        ,  1.        ,  0.        *(cmax-cmin)+cmin],
     [ 0.13333333,  0.13333333,  1.        ,  0.06666667*(cmax-cmin)+cmin],
     [ 0.26666667,  0.26666667,  1.        ,  0.13333333*(cmax-cmin)+cmin],
     [ 0.4       ,  0.4       ,  1.        ,  0.2       *(cmax-cmin)+cmin],
@@ -124,7 +126,8 @@ let Model = function(data, output){
     [ 1.        ,  0.26666667,  0.26666667,  0.86666667*(cmax-cmin)+cmin],
     [ 1.        ,  0.13333333,  0.13333333,  0.93333333*(cmax-cmin)+cmin],
     [ 1.        ,  0.        ,  0.        ,  1.        *(cmax-cmin)+cmin]];
-    
+
+    colors = output.colormap !== undefined ? output.colormap : defaultColors;    
     
     // flatten the array
     colors = colors.reduce((a,b)=>{
@@ -1550,7 +1553,15 @@ let Model = function(data, output){
         runSimulationStep,
         displayPColor: ()=>{renderDisplayProgram()},
         displayOption,
-        colors,
+        set colors(newColors){
+            colors = [... newColors].reduce((a,b)=>{
+                return a.concat(b);
+            });
+            gl.uniform4fv(displayProgram.uniforms.colormap, new Float32Array(colors));   
+        },
+        get colors(){
+            return colors;
+        },
         set newEarthquake(newEarthquake){
             console.log(gl);
             wave.clearBuffers();
