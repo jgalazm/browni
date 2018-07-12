@@ -1562,7 +1562,7 @@ let Model = function(data, output){
         get colors(){
             return colors;
         },
-        set newEarthquake(newEarthquake){
+        set earthquake(newEarthquake){
             console.log(gl);
             wave.clearBuffers();
             earthquake = newEarthquake;
@@ -1572,7 +1572,10 @@ let Model = function(data, output){
             discretization.stepNumber = 0;
 
         },
-        earthquake
+
+        get earthquake(){
+            return Object.assign({},earthquake);
+        }
     }
 
 }
