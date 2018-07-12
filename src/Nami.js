@@ -158,7 +158,7 @@ let app = function(data, output, lifeCycle){
     }
 
     let loadInitialCondition = function(){
-        /* Detects if initialSurface or finiteFault is provided, assuming
+        /* Detects if initialSurface, earthquake or asteroid is provided, assuming
         the user knows the right format.
         Otherwise throws an error */
         if( data.initialSurface != undefined){
@@ -220,6 +220,12 @@ let app = function(data, output, lifeCycle){
             }
 
             if(bathymetryReady && initialSurfaceReady){
+                init();
+            }
+        }
+        else if(data.asteroid !== undefined){
+            initialSurfaceReady = true;
+            if(bathymetryReady){
                 init();
             }
         }

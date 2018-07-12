@@ -621,9 +621,8 @@ let Model = function(data, output){
                 }
 
 
-                float height = 2*exp(-length(pos)*length(pos)/1000/1000);
+                float height = 20.0*exp(-length(pos)*length(pos)/10000.0/10000.0);
                 float bathymetry = texture2D(bathymetry, vUv).r;
-                value = value*step(0.0,bathymetry);
                 bathymetry = max(0.0, bathymetry);
 
                 gl_FragColor = vec4(height, 0.0, 0.0, bathymetry);
@@ -1304,7 +1303,7 @@ let Model = function(data, output){
             gl.uniform1i(asteroidProgram.uniforms.coordinates, 1);
         }
 
-        renderFrameBuffer(wave.second.fbo);
+        renderFrameBuffer(wave.first.fbo);
     }
 
     let renderEarthquake = () => {
@@ -1406,7 +1405,7 @@ let Model = function(data, output){
         if(initialSurface){
             renderInitialProgram();
         }
-        else if(earthquake){
+        else if(earthquake.length>0){
             renderEarthquake();
         }
         else if(asteroid){
