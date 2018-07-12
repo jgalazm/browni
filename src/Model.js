@@ -578,10 +578,9 @@ let Model = function(data, output){
             uniform float ymin;
             uniform float ymax;
 
-            uniform float Dc;
-            uniform float dc;
-            uniform float rho_i;
+            uniform float R_i;
             uniform float v_i;
+            uniform float rho_i;
             uniform float ce;
             uniform float cn;
             
@@ -589,9 +588,10 @@ let Model = function(data, output){
 
 
             const float pi = 3.14159265358979323;
-            const float Rearth = 6378000.0;
+            const float Rearth = 6378000.0;            
             const float g = 9.81;
-            const float eps = 1e-2;
+            const float rho_w = 1.0;
+            const float epsilon_tsunami = 0.15;
             const int CARTESIAN = 0;
             const int SPHERICAL = 1;
 
@@ -604,6 +604,10 @@ let Model = function(data, output){
             }
 
             void main(){
+                float bathymetry = texture2D(bathymetry, vUv).r;
+                bathymetry = max(0.0, bathymetry);
+
+
                 float nx = 1.0/texel.x;
                 float ny = 1.0/texel.y;
                 float V = (vUv.y-0.5*texel.y)/((ny-1.0)*texel.y);
@@ -621,9 +625,18 @@ let Model = function(data, output){
                 }
 
 
-                float height = 20.0*exp(-length(pos)*length(pos)/10000.0/10000.0);
-                float bathymetry = texture2D(bathymetry, vUv).r;
-                bathymetry = max(0.0, bathymetry);
+                float Q = pow(8.0*epsilon_tsunami*rho_i*v_i*v_i/(9.0*rho_w*g), 0.25);
+                float Dc = Q*pow(R_i, 0.75);
+                float dc = Dc*3.0;
+                float Rc = dc/2.0;
+                float Rd = Rc * sqrt(2.0);
+
+                float r = length(pos);
+                float height = 0.0;
+                if( r <= Rd){
+                    height = -Dc * (1.0-r*r/(Rc*Rc));
+                }
+                
 
                 gl_FragColor = vec4(height, 0.0, 0.0, bathymetry);
             }
@@ -1289,10 +1302,9 @@ let Model = function(data, output){
         gl.uniform1f(asteroidProgram.uniforms.ymax, domain.ymax) ;
 
 
-        gl.uniform1f(asteroidProgram.uniforms.Dc, asteroid.Dc);
-        gl.uniform1f(asteroidProgram.uniforms.dc, asteroid.dc);
-        gl.uniform1f(asteroidProgram.uniforms.rho_i, asteroid.rho_i);
+        gl.uniform1f(asteroidProgram.uniforms.R_i, asteroid.R_i);
         gl.uniform1f(asteroidProgram.uniforms.v_i, asteroid.v_i);
+        gl.uniform1f(asteroidProgram.uniforms.rho_i, asteroid.rho_i);
         gl.uniform1f(asteroidProgram.uniforms.ce, asteroid.ce);
         gl.uniform1f(asteroidProgram.uniforms.cn, asteroid.cn);
        
