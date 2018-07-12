@@ -2,13 +2,13 @@ import {getLengthWidthSlip} from './Earthquake'
 
 let Model = function(data, output){
     let gl, isWebGL2;
-    let vertexShader, initialShader, okadaShader, cartesianWaveShader, 
-    sphericalWaveShader, maxHeightsShader,displayShader;
+    let vertexShader, initialShader, okadaShader, asteroidShader,
+    cartesianWaveShader, sphericalWaveShader, maxHeightsShader,displayShader;
     
-    let initialProgram, okadaProgram, cartesianWaveProgram, 
-    sphericalWaveProgram, maxHeightsProgram, displayProgram  ;
+    let initialProgram, okadaProgram, asteroidProgram,
+    cartesianWaveProgram, sphericalWaveProgram, maxHeightsProgram, displayProgram  ;
 
-    let domain, bathymetry, discretization, initialSurface, earthquake;
+    let domain, bathymetry, discretization, initialSurface, earthquake, asteroid;
     let wave, maxHeights, pcolorDisplay;
     let displayOption, pois, colors;
     let defaultColors;
@@ -61,6 +61,9 @@ let Model = function(data, output){
     }
     else if(data.earthquake){
         earthquake = data.earthquake;
+    }
+    else if(data.asteroid){
+        asteroid = Object.assign({}, data.asteroid);
     }
             
 
@@ -562,6 +565,71 @@ let Model = function(data, output){
             }
         
         `);
+
+        asteroidShader = compileShader(gl.FRAGMENT_SHADER,`
+            precision highp float;
+            varying vec2 vUv;
+            uniform sampler2D bathymetry;
+            
+            uniform vec2 texel;
+
+            uniform float xmin;
+            uniform float xmax;
+            uniform float ymin;
+            uniform float ymax;
+
+            uniform float Dc;
+            uniform float dc;
+            uniform float rho_i;
+            uniform float v_i;
+            uniform float ce;
+            uniform float cn;
+            
+            uniform int coordinates;
+
+
+            const float pi = 3.14159265358979323;
+            const float Rearth = 6378000.0;
+            const float g = 9.81;
+            const float eps = 1e-2;
+            const int CARTESIAN = 0;
+            const int SPHERICAL = 1;
+
+            vec2 simpleProjection(float latin, float lonin, float lat0, float lon0){
+                float y = Rearth*(latin-lat0)*pi/180.0;
+                float x = Rearth*cos(lat0*pi/180.0)*(lonin-lon0)*pi/180.0;
+
+                return vec2(x,y);
+
+            }
+
+            void main(){
+                float nx = 1.0/texel.x;
+                float ny = 1.0/texel.y;
+                float V = (vUv.y-0.5*texel.y)/((ny-1.0)*texel.y);
+                float U = (vUv.x-0.5*texel.x)/((nx-1.0)*texel.x);
+                float n = ymin + V*(ymax-ymin);
+                float e = xmin + U*(xmax-xmin);
+    
+                // center on reference point and make projection if necessary
+                vec2 pos;
+                if(coordinates==CARTESIAN){
+                    pos = vec2(e-ce,n-cn);
+                }
+                else if(coordinates==SPHERICAL){
+                    pos = simpleProjection(n,e,cn,ce);
+                }
+
+
+                float height = 2*exp(-length(pos)*length(pos)/1000/1000);
+                float bathymetry = texture2D(bathymetry, vUv).r;
+                value = value*step(0.0,bathymetry);
+                bathymetry = max(0.0, bathymetry);
+
+                gl_FragColor = vec4(height, 0.0, 0.0, bathymetry);
+            }
+
+        `);
         cartesianWaveShader = compileShader(gl.FRAGMENT_SHADER,`
             precision highp float;
             
@@ -1003,9 +1071,11 @@ let Model = function(data, output){
                 float alpha  = pow(abs(uij),0.2);
                 gl_FragColor  = vec4(color, alpha);
             }    
-        `);        
+        `);       
+
         initialProgram = shaderProgram(vertexShader, initialShader);
         okadaProgram = shaderProgram(vertexShader, okadaShader);
+        asteroidProgram = shaderProgram(vertexShader, asteroidShader);
         cartesianWaveProgram = shaderProgram(vertexShader, cartesianWaveShader);
         sphericalWaveProgram = shaderProgram(vertexShader, sphericalWaveShader);
         displayProgram = shaderProgram(vertexShader, displayShader);
@@ -1205,6 +1275,38 @@ let Model = function(data, output){
         renderFrameBuffer(wave.second.fbo);
     }
 
+    let renderAsteroidProgram = function(){
+        
+        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
+        gl.useProgram(asteroidProgram.program);
+        gl.uniform1i(asteroidProgram.uniforms.bathymetry, bathymetry.texture.textureId);
+
+
+        gl.uniform2f(asteroidProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
+
+        gl.uniform1f(asteroidProgram.uniforms.xmin, domain.xmin) ;
+        gl.uniform1f(asteroidProgram.uniforms.xmax, domain.xmax) ;
+        gl.uniform1f(asteroidProgram.uniforms.ymin, domain.ymin) ;
+        gl.uniform1f(asteroidProgram.uniforms.ymax, domain.ymax) ;
+
+
+        gl.uniform1f(asteroidProgram.uniforms.Dc, asteroid.Dc);
+        gl.uniform1f(asteroidProgram.uniforms.dc, asteroid.dc);
+        gl.uniform1f(asteroidProgram.uniforms.rho_i, asteroid.rho_i);
+        gl.uniform1f(asteroidProgram.uniforms.v_i, asteroid.v_i);
+        gl.uniform1f(asteroidProgram.uniforms.ce, asteroid.ce);
+        gl.uniform1f(asteroidProgram.uniforms.cn, asteroid.cn);
+       
+        if(domain.coordinates == 'cartesian'){
+            gl.uniform1i(asteroidProgram.uniforms.coordinates, 0);
+        }
+        else if(domain.coordinates == 'spherical'){
+            gl.uniform1i(asteroidProgram.uniforms.coordinates, 1);
+        }
+
+        renderFrameBuffer(wave.second.fbo);
+    }
+
     let renderEarthquake = () => {
         for(let i = 0; i < earthquake.length; i++){
             renderOkadaProgram(earthquake[i]);
@@ -1306,6 +1408,9 @@ let Model = function(data, output){
         }
         else if(earthquake){
             renderEarthquake();
+        }
+        else if(asteroid){
+            renderAsteroidProgram();
         }
 
         renderMaxHeightsProgram();
