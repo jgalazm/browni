@@ -1589,7 +1589,13 @@ let Model = function(data, output){
     let setEarthquake = ()=>{
         if(earthquake){
             for(let i = 0; i<earthquake.length; i++){
-                earthquake[i].ce = earthquake[i].ce;
+                if(earthquake[i].lat !== undefined){
+                    earthquake[i].cn = earthquake[i].lat;
+                }
+                if(earthquake[i].lon !== undefined){
+                    earthquake[i].ce = earthquake[i].lon;
+                }
+                earthquake[i].U3 = 0.0;
     
                 if( earthquake[i].Mw != undefined && 
                     !(earthquake[i].L != undefined && 
@@ -1605,7 +1611,6 @@ let Model = function(data, output){
                         earthquake[i].depth = slabInfo.depth*1000;
                         earthquake[i].dip = slabInfo.dip;
                         earthquake[i].strike = slabInfo.strike;
-                        console.log(earthquake[i].depth, earthquake[i].dip, earthquake[i].strike);
                     }
                 }
             }   

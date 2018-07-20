@@ -2,3 +2,6 @@ node_modules
 build
 py3env
 bathymetry
+.ipynb_checkpoints
+validation/ETOPO1_Ice_c_gmt4.grd
+validation/04_tohoku2011/data/earthquake.csv

@@ -62,7 +62,7 @@ let app = function(data, output, lifeCycle){
 
               fileReader.onload = (event) =>{
                   arrayBuffer = event.target.result;
-                  let arr = [... new Int8Array(arrayBuffer)];
+                  let arr = [... new Float64Array(arrayBuffer)];
                   arr = rowToMatrix( arr.slice(2,arr.length-1), arr[0], arr[1]);
 
                   
@@ -161,6 +161,7 @@ let app = function(data, output, lifeCycle){
         /* Detects if initialSurface, earthquake or asteroid is provided, assuming
         the user knows the right format.
         Otherwise throws an error */
+        debugger;
         if( data.initialSurface != undefined){
 
             getArrayFromFile(data.initialSurface,function(array){
@@ -181,7 +182,7 @@ let app = function(data, output, lifeCycle){
             if(typeof(data.earthquake)==="string"){
                 
                 getStringFromFile(data.earthquake, fileString => {
-                    let earthquake = fileString.split('\n');
+                    let earthquake = fileString.replace(String.fromCharCode(13),'').split('\n');
                     let keys = earthquake[0].split(',');
                     let key2column = {};
                     for(let i = 0; i<keys.length; i++){
