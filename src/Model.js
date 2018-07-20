@@ -142,7 +142,13 @@ let Model = function(data, output){
 
     */
 
-    let canvas = document.createElement("canvas");
+    let canvas;    
+    if(data.canvas != undefined){
+      canvas = data.canvas;
+    }
+    else{
+      canvas = document.createElement("canvas");   
+    }
     canvas.width = pcolorDisplay.width;
     canvas.height = pcolorDisplay.height;
 
