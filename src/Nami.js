@@ -62,7 +62,7 @@ let app = function(data, output, lifeCycle){
 
               fileReader.onload = (event) =>{
                   arrayBuffer = event.target.result;
-                  let arr = [... new Float64Array(arrayBuffer)];
+                  let arr = [... new Int8Array(arrayBuffer)];
                   arr = rowToMatrix( arr.slice(2,arr.length-1), arr[0], arr[1]);
 
                   
