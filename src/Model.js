@@ -12,6 +12,7 @@ let Model = function(data, output){
     let wave, maxHeights, pcolorDisplay;
     let displayOption, pois, colors;
     let defaultColors;
+    let slab;
 
    
     // domain
@@ -136,6 +137,10 @@ let Model = function(data, output){
     colors = colors.reduce((a,b)=>{
         return a.concat(b);
     });
+
+    /* misc data */
+
+    slab = data.slab;
 
     /* 
         Start WebGL context
