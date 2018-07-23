@@ -69,8 +69,8 @@ let Model = function(data, output){
             
 
     pcolorDisplay = {
-        width : data.displayWidth,
-        height : data.displayHeight
+        width : output.displayWidth,
+        height : output.displayHeight
     };
     
     displayOption = output.displayOption ? output.displayOption : 'heights';
