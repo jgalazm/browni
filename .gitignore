@@ -9,3 +9,5 @@ validation/04_tohoku2011/tsunamilab/tlab2D*
 tseries
 tsunamiDART*
 *.png
+validation/06_illapel2015/data/earthquake.csv
+validation/06_illapel2015/data/usgs.csv
