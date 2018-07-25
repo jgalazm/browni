@@ -1467,6 +1467,7 @@ let Model = function(data, output){
             pois[poi].pixel = [i+1,j+1];
             pois[poi].surface = [];
             pois[poi].time = [];
+            pois[poi].depth = exportBuffer(wave.first.fbo, 3, i, j, 1, 1)[0];
         });
     }
 
