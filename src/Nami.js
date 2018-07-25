@@ -161,7 +161,6 @@ let app = function(data, output, lifeCycle){
         /* Detects if initialSurface, earthquake or asteroid is provided, assuming
         the user knows the right format.
         Otherwise throws an error */
-        debugger;
         if( data.initialSurface != undefined){
 
             getArrayFromFile(data.initialSurface,function(array){
