@@ -243,16 +243,76 @@ let Model = function(data, output){
         initialShader = compileShader(gl.FRAGMENT_SHADER,`
             precision highp float;
             
+            varying vec2 vUv;
+            
             uniform sampler2D bathymetry;
             uniform sampler2D initialSurface;
 
-            varying vec2 vUv;
+            uniform vec2 texel; 
+            
+            uniform float L;
+            uniform float W;
+            uniform float ce;
+            uniform float cn;
+            uniform float xmin;
+            uniform float xmax;
+            uniform float ymin;
+            uniform float ymax;
+
+            uniform int coordinates;
+
+            const int CARTESIAN = 0;
+            const int SPHERICAL = 1;
+
+            const float Rearth = 6378000.0;
+            
+
+
+            vec2 simpleProjection(float latin, float lonin, float lat0, float lon0){
+                float pi = 3.141592653589793 ;
+                float y = Rearth*(latin-lat0)*pi/180.0;
+                float x = Rearth*cos(lat0*pi/180.0)*(lonin-lon0)*pi/180.0;
+
+                return vec2(x,y);
+
+            }
 
             void main()
             { 
+
+                // normalize vUv so it is defined 1-1 in [0,1] 
+                // this way the first pixel corresponds to xmin and the last to xmax, exactly
+
+                float nx = 1.0/texel.x;
+                float ny = 1.0/texel.y;
+                float V = (vUv.y-0.5*texel.y)/((ny-1.0)*texel.y);
+                float U = (vUv.x-0.5*texel.x)/((nx-1.0)*texel.x);
+                float n = ymin + V*(ymax-ymin);
+                float e = xmin + U*(xmax-xmin);
+
+                // center on reference point and make projection if necessary
+                vec2 pos;
+                if(coordinates==CARTESIAN){
+                    pos = vec2(e-ce,n-cn);
+                }
+                else if(coordinates==SPHERICAL){
+                    // vec2 pos = stereographic_projection(n,e,cn,ce);
+                    pos = simpleProjection(n,e,cn,ce);
+                }
+
+                float eta = 0.0;
+                if (abs(pos.x)<L/2.0 && abs(pos.y)<W/2.0){
+
+                    float u = (pos.x-L/2.0)/L;
+                    float v = (pos.y-W/2.0)/W;
+                    eta  = texture2D(initialSurface, vec2(u,v)).r;
+
+                }
+
                 float h = texture2D(bathymetry, vUv).r;
-                h = max(h,0.0);
-                float eta = texture2D(initialSurface, vUv).r;
+                h = max(0.0, h);
+
+
                 gl_FragColor  = vec4(eta, 0.0, 0.0, h);
             }    
         `);
@@ -1241,6 +1301,24 @@ let Model = function(data, output){
         gl.uniform1i(initialProgram.uniforms.bathymetry, bathymetry.texture.textureId);
         gl.uniform1i(initialProgram.uniforms.initialSurface, initialSurface.texture.textureId);
 
+        gl.uniform2f(okadaProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
+
+        gl.uniform1f(initialProgram.uniforms.xmin, domain.xmin) ;
+        gl.uniform1f(initialProgram.uniforms.xmax, domain.xmax) ;
+        gl.uniform1f(initialProgram.uniforms.ymin, domain.ymin) ;
+        gl.uniform1f(initialProgram.uniforms.ymax, domain.ymax) ;
+
+        gl.uniform1f(initialProgram.uniforms.L, data.initialSurface.L);
+        gl.uniform1f(initialProgram.uniforms.W, data.initialSurface.W);
+        gl.uniform1f(initialProgram.uniforms.W, data.initialSurface.ce);
+        gl.uniform1f(initialProgram.uniforms.W, data.initialSurface.cn);
+        
+        if(domain.coordinates == 'cartesian'){
+            gl.uniform1i(initialProgram.uniforms.coordinates, 0);
+        }
+        else if(domain.coordinates == 'spherical'){
+            gl.uniform1i(initialProgram.uniforms.coordinates, 1);
+        }
         renderFrameBuffer(wave.first.fbo);
     }
 
