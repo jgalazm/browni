@@ -300,12 +300,14 @@ let Model = function(data, output){
                     pos = simpleProjection(n,e,cn,ce);
                 }
 
-                float eta = 0.0;
-                if (abs(pos.x)<L/2.0 && abs(pos.y)<W/2.0){
+                float eta = -0.0;
+                if (abs(pos.x)<L*10000.0/2.0 && abs(pos.y)<W*10000.0/2.0){
 
-                    float u = (pos.x-L/2.0)/L;
-                    float v = (pos.y-W/2.0)/W;
+                    float u = (pos.x+L/2.0)/L;
+                    float v = (pos.y+W/2.0)/W;
                     eta  = texture2D(initialSurface, vec2(u,v)).r;
+                    eta = 1.0;
+                    eta = u;
 
                 }
 
@@ -313,7 +315,7 @@ let Model = function(data, output){
                 h = max(0.0, h);
 
 
-                gl_FragColor  = vec4(eta, 0.0, 0.0, h);
+                gl_FragColor  = vec4(1.0, 0.0, 0.0, h);
             }    
         `);
         
@@ -1301,7 +1303,7 @@ let Model = function(data, output){
         gl.uniform1i(initialProgram.uniforms.bathymetry, bathymetry.texture.textureId);
         gl.uniform1i(initialProgram.uniforms.initialSurface, initialSurface.texture.textureId);
 
-        gl.uniform2f(okadaProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
+        gl.uniform2f(initialProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
 
         gl.uniform1f(initialProgram.uniforms.xmin, domain.xmin) ;
         gl.uniform1f(initialProgram.uniforms.xmax, domain.xmax) ;
@@ -1709,7 +1711,7 @@ let Model = function(data, output){
     };
 
     let setEarthquake = ()=>{
-        if(earthquake){
+        if(earthquake.length>0){
             for(let i = 0; i<earthquake.length; i++){
                 if(earthquake[i].lat !== undefined){
                     earthquake[i].cn = earthquake[i].lat;
