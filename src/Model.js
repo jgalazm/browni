@@ -69,8 +69,8 @@ let Model = function(data, output){
             
 
     pcolorDisplay = {
-        width : data.displayWidth,
-        height : data.displayHeight
+        width : output.displayWidth,
+        height : output.displayHeight
     };
     
     displayOption = output.displayOption ? output.displayOption : 'heights';
@@ -1350,6 +1350,8 @@ let Model = function(data, output){
         gl.uniform1i(okadaProgram.uniforms.previousTexture, wave.first.textureId);
 
 
+        finiteFault.reference = finiteFault.reference.replace(String.fromCharCode(13),"");
+        
         if(finiteFault.reference == 'center'){
             gl.uniform1i(okadaProgram.uniforms.reference, 0);
         }
@@ -1532,6 +1534,17 @@ let Model = function(data, output){
         /*
             Initializes the list of pois in the model
         */
+
+       let bathymetryTemp = exportBuffer(wave.first.fbo, 3, 0, 0, data.waveWidth, data.waveHeight);
+       bathymetryTemp = [... bathymetryTemp];
+
+    
+       let bathymetry = [];
+
+       while (bathymetryTemp.length > 0) bathymetry.push(bathymetryTemp.splice(0, data.waveWidth));
+
+    
+
         Object.keys(pois).forEach(function(poi){
             var dlon = discretization.dlon;
             var dlat = discretization.dlat;
@@ -1545,6 +1558,32 @@ let Model = function(data, output){
             pois[poi].pixel = [i+1,j+1];
             pois[poi].surface = [];
             pois[poi].time = [];
+            pois[poi].depth = exportBuffer(wave.first.fbo, 3, i, j, 1, 1)[0];
+
+            pois[poi].shallowCorrectionFactor = 1;
+            pois[poi].closestDeepPoint = [];
+            pois[poi].closestDeepPointDepth = undefined;
+
+            let closestDeepPointDistance = Infinity;
+            if(  pois[poi].depth <=100 ){
+                for(let j0 = 0; j0< bathymetry.length; j0++){
+                    for(let i0 = 0; i0 < bathymetry.length; i0++){
+                        const distance = (i0-i)*(i0-i) + (j0-j)*(j0-j); // assumes uniform cartesian grid
+                        if(bathymetry[j0][i0]>100.0 && distance < closestDeepPointDistance){
+                            pois[poi].closestDeepPoint = [i0, j0];
+                            pois[poi].closestDeepPointDepth = bathymetry[j0][i0];
+                        }
+                    }
+                }
+                
+                const d = Math.max(pois[poi].depth, 1.0);
+                const d0 = pois[poi].closestDeepPointDepth;
+                pois[poi].originalPixel = pois[poi].pixel;
+                pois[poi].pixel = pois[poi].closestDeepPoint;
+                pois[poi].shallowCorrectionFactor = Math.pow(d0/d,0.25);
+
+
+            }
         });
     }
 
@@ -1672,7 +1711,13 @@ let Model = function(data, output){
     let setEarthquake = ()=>{
         if(earthquake){
             for(let i = 0; i<earthquake.length; i++){
-                earthquake[i].ce = earthquake[i].ce;
+                if(earthquake[i].lat !== undefined){
+                    earthquake[i].cn = earthquake[i].lat;
+                }
+                if(earthquake[i].lon !== undefined){
+                    earthquake[i].ce = earthquake[i].lon;
+                }
+                earthquake[i].U3 = 0.0;
     
                 if( earthquake[i].Mw != undefined && 
                     !(earthquake[i].L != undefined && 
@@ -1688,7 +1733,6 @@ let Model = function(data, output){
                         earthquake[i].depth = slabInfo.depth*1000;
                         earthquake[i].dip = slabInfo.dip;
                         earthquake[i].strike = slabInfo.strike;
-                        console.log(earthquake[i].depth, earthquake[i].dip, earthquake[i].strike);
                     }
                 }
             }   

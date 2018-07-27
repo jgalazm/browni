@@ -179,7 +179,7 @@ let app = function(data, output, lifeCycle){
             if(typeof(data.earthquake)==="string"){
                 
                 getStringFromFile(data.earthquake, fileString => {
-                    let earthquake = fileString.split('\n');
+                    let earthquake = fileString.replace(String.fromCharCode(13),'').split('\n');
                     let keys = earthquake[0].split(',');
                     let key2column = {};
                     for(let i = 0; i<keys.length; i++){
