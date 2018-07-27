@@ -300,22 +300,22 @@ let Model = function(data, output){
                     pos = simpleProjection(n,e,cn,ce);
                 }
 
-                float eta = -0.0;
-                if (abs(pos.x)<L*10000.0/2.0 && abs(pos.y)<W*10000.0/2.0){
+                float eta = 0.0;
+                if (abs(pos.x)<L/2.0 && abs(pos.y)<W/2.0){
 
                     float u = (pos.x+L/2.0)/L;
                     float v = (pos.y+W/2.0)/W;
                     eta  = texture2D(initialSurface, vec2(u,v)).r;
-                    eta = 1.0;
-                    eta = u;
 
                 }
 
                 float h = texture2D(bathymetry, vUv).r;
                 h = max(0.0, h);
 
+                // value = value*step(0.0,bathymetry);
 
-                gl_FragColor  = vec4(1.0, 0.0, 0.0, h);
+
+                gl_FragColor  = vec4(eta, 0.0, 0.0, h);
             }    
         `);
         
@@ -1312,8 +1312,8 @@ let Model = function(data, output){
 
         gl.uniform1f(initialProgram.uniforms.L, data.initialSurface.L);
         gl.uniform1f(initialProgram.uniforms.W, data.initialSurface.W);
-        gl.uniform1f(initialProgram.uniforms.W, data.initialSurface.ce);
-        gl.uniform1f(initialProgram.uniforms.W, data.initialSurface.cn);
+        gl.uniform1f(initialProgram.uniforms.ce, data.initialSurface.ce);
+        gl.uniform1f(initialProgram.uniforms.cn, data.initialSurface.cn);
         
         if(domain.coordinates == 'cartesian'){
             gl.uniform1i(initialProgram.uniforms.coordinates, 0);
