@@ -1468,32 +1468,38 @@ let Model = function(data, output){
     
 
         Object.keys(pois).forEach(function(poi){
-            var dlon = discretization.dlon;
-            var dlat = discretization.dlat;
-            var lowerLeftCorner = [domain.xmin, domain.ymin];
+            const dlon = discretization.dlon;
+            const dlat = discretization.dlat;
+            const lowerLeftCorner = [domain.xmin, domain.ymin];
 
             pois[poi].location[0] = pois[poi].location[0];
 
-            var i = Math.floor((pois[poi].location[0]-lowerLeftCorner[0])/(dlon/60.0)+0.5);
-            var j = Math.floor((pois[poi].location[1]-lowerLeftCorner[1])/(dlat/60.0)+0.5);
+            const i = Math.floor((pois[poi].location[0]-lowerLeftCorner[0])/(dlon/60.0)+0.5);
+            const j = Math.floor((pois[poi].location[1]-lowerLeftCorner[1])/(dlat/60.0)+0.5);
 
-            pois[poi].pixel = [i+1,j+1];
+            pois[poi].pixel = [i,j];
             pois[poi].surface = [];
             pois[poi].time = [];
-            pois[poi].depth = exportBuffer(wave.first.fbo, 3, i, j, 1, 1)[0];
-
+            
+            // if depth is provided and is shallow then use it, otherwise get it from the matrix
+            // the texture is read in [j][i] order
+            pois[poi].depth = (pois[poi].depth && pois[poi].depth < 100) ? pois[poi].depth : bathymetry[j][i]; 
+            
             pois[poi].shallowCorrectionFactor = 1;
             pois[poi].closestDeepPoint = [];
             pois[poi].closestDeepPointDepth = undefined;
 
+            // if point is in shallow water look for closest point in deep water:
             let closestDeepPointDistance = Infinity;
             if(  pois[poi].depth <=100 ){
+                console.log('shallow poi:', poi)
                 for(let j0 = 0; j0< bathymetry.length; j0++){
-                    for(let i0 = 0; i0 < bathymetry.length; i0++){
+                    for(let i0 = 0; i0 < bathymetry[0].length; i0++){
                         const distance = (i0-i)*(i0-i) + (j0-j)*(j0-j); // assumes uniform cartesian grid
                         if(bathymetry[j0][i0]>100.0 && distance < closestDeepPointDistance){
                             pois[poi].closestDeepPoint = [i0, j0];
                             pois[poi].closestDeepPointDepth = bathymetry[j0][i0];
+                            closestDeepPointDistance = distance;
                         }
                     }
                 }
@@ -1518,9 +1524,9 @@ let Model = function(data, output){
         // store water surface elevation at points of interest (POIs)
 
         Object.keys(pois).forEach(function(poi){
-            var pixelsurface = readFBOPixels(wave.first.fbo, pois[poi].pixel[0], pois[poi].pixel[1], 1, 1)[0];
-
-            pois[poi].surface.push(pixelsurface);
+            var pixelSurface = readFBOPixels(wave.first.fbo, pois[poi].pixel[0], pois[poi].pixel[1], 1, 1)[0];
+            pixelSurface = pixelSurface * pois[poi].shallowCorrectionFactor;
+            pois[poi].surface.push(pixelSurface);
             pois[poi].time.push(discretization.dt*discretization.stepNumber);
             
         });
