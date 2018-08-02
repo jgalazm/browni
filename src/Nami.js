@@ -120,7 +120,19 @@ let app = function(data, output, lifeCycle){
     }
 
     let loadBathymetry = function(){
-        if(data.bathymetry.slice(-3)==='png' || data.bathymetry.slice(-3)==='jpg'){
+
+        if(typeof data.bathymetry == 'object'){
+            // assume bathymetry is an array
+            data.bathymetry = {
+                array: data.bathymetry
+            };
+            bathymetryReady = true;
+
+            if(initialSurfaceReady){
+                init();
+            }
+        }
+        else if(data.bathymetry.slice(-3)==='png' || data.bathymetry.slice(-3)==='jpg'){
             if(!data.bathymetryMetadata){
                 throw new Error('Must define data.bathymetryMetadata when using image format bathymetry');
             }
@@ -161,6 +173,7 @@ let app = function(data, output, lifeCycle){
         /* Detects if initialSurface, earthquake or asteroid is provided, assuming
         the user knows the right format.
         Otherwise throws an error */
+
         if( data.initialSurface != undefined){
 
             getArrayFromFile(data.initialSurface,function(array){
