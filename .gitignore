@@ -11,3 +11,9 @@ tsunamiDART*
 *.png
 validation/06_illapel2015/data/earthquake.csv
 validation/06_illapel2015/data/usgs.csv
+validation/06_illapel2015/comparison/2015/2015-anto.txt
+**/*.zip
+**/*.txt
+**/*tlab2D*
+pois.json
+tseries.json
