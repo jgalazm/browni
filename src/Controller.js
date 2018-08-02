@@ -47,33 +47,45 @@ let Controller = function(model,data, lifeCycle){
     }
 
     let downloadPOIs = function(pois){
-        var exportString = "#seconds";
-        Object.keys(pois).forEach(function(poi){
-            exportString +=','+poi+'(m)';
-        });
-        exportString+='\n';        
+        // var exportString = "#seconds";
+        // Object.keys(pois).forEach(function(poi){
+        //     exportString +=','+poi+'(m)';
+        // });
+        // exportString+='\n';        
 
         
-        for(let i=0;i< pois[Object.keys(pois)[0]].time.length; i++){
-            exportString += pois[Object.keys(pois)[0]].time[i].toFixed(8).toString();
+        // for(let i=0;i< pois[Object.keys(pois)[0]].time.length; i++){
+        //     exportString += pois[Object.keys(pois)[0]].time[i].toFixed(8).toString();
             
             
-            Object.keys(pois).forEach(function(poi){
-                exportString += ','+pois[poi].surface[i].toFixed(8).toString();
-            });
+        //     Object.keys(pois).forEach(function(poi){
+        //         exportString += ','+pois[poi].surface[i].toFixed(8).toString();
+        //     });
 
-            exportString += '\n';
-        }
+        //     exportString += '\n';
+        // }
         
-        exportString = 'data:text/csv;charset=utf-8,'+exportString;   
-        exportString = encodeURI(exportString);     
+        // exportString = JSON.stringify(pois);
+        // exportString = 'data:text/json;charset=utf-8,'+exportString;   
+        // exportString = encodeURI(exportString);     
 
-        let link = document.createElement("a");
-        link.href =  exportString;
-        link.download = "tseries";
-        link.click();   
+        // let link = document.createElement("a");
+        // link.href =  exportString;
+        // link.download = "tseries.json";
+        // link.click();   
 
+        let download = (text, filename) =>{
+            var blob = new Blob([text], {type: "text/json"});
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            a.click();
         }
+
+        download(JSON.stringify(pois), 'pois');
+
+    }
 
     let animate = () => {
 
