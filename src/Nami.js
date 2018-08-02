@@ -176,11 +176,9 @@ let app = function(data, output, lifeCycle){
 
         if( data.initialSurface != undefined){
 
-            getArrayFromFile(data.initialSurface,function(array){
+            getArrayFromFile(data.initialSurface.file,function(array){
                 
-                data.initialSurface = {
-                    array : array
-                }
+                data.initialSurface.array = array;
         
                 initialSurfaceReady = true;
         

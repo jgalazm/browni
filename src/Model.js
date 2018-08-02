@@ -10,8 +10,8 @@ let Model = function(data, output){
 
     let domain, bathymetry, discretization, initialSurface, earthquake, asteroid;
     let wave, maxHeights, pcolorDisplay;
-    let displayOption, pois, colors;
-    let defaultColors;
+    let displayOption, pois, colormap;
+    let defaultColormap;
     let slab;
 
    
@@ -77,64 +77,101 @@ let Model = function(data, output){
 
     pois = output.pois ? output.pois : {};
 
-    defaultColors = [[ 0.01568627,  0.11372549,  0.23137255,  0.        ],
-    [ 0.03137255,  0.23137255,  0.4627451 ,  0.01      ],
-    [ 0.09411765,  0.30196078,  0.61568627,  0.011     ],
-    [ 0.23137255,  0.41568627,  0.8       ,  0.05      ],
-    [ 0.15294118,  0.1254902 ,  0.89411765,  0.051     ],
-    [ 0.44313725,  0.72156863,  0.97647059,  0.1       ],
-    [ 0.        ,  0.41568627,  0.06666667,  0.101     ],
-    [ 0.        ,  0.81568627,  0.        ,  0.25      ],
-    [ 0.5372549 ,  0.50980392,  0.        ,  0.251     ],
-    [ 0.99607843,  0.89803922,  0.07843137,  0.5       ],
-    [ 0.51372549,  0.31372549,  0.        ,  0.501     ],
-    [ 0.88235294,  0.50196078,  0.0627451 ,  0.75      ],
-    [ 0.62352941,  0.0745098 ,  0.        ,  0.751     ],
-    [ 0.97647059,  0.10196078,  0.        ,  1.        ],
-    [ 1.        ,  1.        ,  1.        ,  1.001     ],
-    [ 1.        ,  0.25098039,  0.76862745,  2.25      ]];
+    // defaultColormap = [[ 0.01568627,  0.11372549,  0.23137255,  0.        ],
+    // [ 0.03137255,  0.23137255,  0.4627451 ,  0.01      ],
+    // [ 0.09411765,  0.30196078,  0.61568627,  0.011     ],
+    // [ 0.23137255,  0.41568627,  0.8       ,  0.05      ],
+    // [ 0.15294118,  0.1254902 ,  0.89411765,  0.051     ],
+    // [ 0.44313725,  0.72156863,  0.97647059,  0.1       ],
+    // [ 0.        ,  0.41568627,  0.06666667,  0.101     ],
+    // [ 0.        ,  0.81568627,  0.        ,  0.25      ],
+    // [ 0.5372549 ,  0.50980392,  0.        ,  0.251     ],
+    // [ 0.99607843,  0.89803922,  0.07843137,  0.5       ],
+    // [ 0.51372549,  0.31372549,  0.        ,  0.501     ],
+    // [ 0.88235294,  0.50196078,  0.0627451 ,  0.75      ],
+    // [ 0.62352941,  0.0745098 ,  0.        ,  0.751     ],
+    // [ 0.97647059,  0.10196078,  0.        ,  1.        ],
+    // [ 1.        ,  1.        ,  1.        ,  1.001     ],
+    // [ 1.        ,  0.25098039,  0.76862745,  2.25      ]];
     
-    let cmin = -0.5;
-    let cmax = 0.5;
+    // let cmin = -0.5;
+    // let cmax = 0.5;
     
-    defaultColors = [[ 0.        ,  0.        ,  0.3 ,  0.0       *(cmax-cmin)+cmin],
-    [ 0.        ,  0.        ,  0.48666667,  0.06666667*(cmax-cmin)+cmin],
-    [ 0.        ,  0.        ,  0.67333333,  0.13333333*(cmax-cmin)+cmin],
-    [ 0.        ,  0.        ,  0.86      ,  0.2       *(cmax-cmin)+cmin],
-    [ 0.06666667,  0.06666667,  1.        ,  0.26666667*(cmax-cmin)+cmin],
-    [ 0.33333333,  0.33333333,  1.        ,  0.33333333*(cmax-cmin)+cmin],
-    [ 0.6       ,  0.6       ,  1.        ,  0.4       *(cmax-cmin)+cmin],
-    [ 0.86666667,  0.86666667,  1.        ,  0.46666667*(cmax-cmin)+cmin],
-    [ 1.        ,  0.86666667,  0.86666667,  0.53333333*(cmax-cmin)+cmin],
-    [ 1.        ,  0.6       ,  0.6       ,  0.6       *(cmax-cmin)+cmin],
-    [ 1.        ,  0.33333333,  0.33333333,  0.66666667*(cmax-cmin)+cmin],
-    [ 1.        ,  0.06666667,  0.06666667,  0.73333333*(cmax-cmin)+cmin],
-    [ 0.9       ,  0.        ,  0.        ,  0.8       *(cmax-cmin)+cmin],
-    [ 0.76666667,  0.        ,  0.        ,  0.86666667*(cmax-cmin)+cmin],
-    [ 0.63333333,  0.        ,  0.        ,  0.93333333*(cmax-cmin)+cmin],
-    [ 0.5       ,  0.        ,  0.        ,  1.0       *(cmax-cmin)+cmin]];
+    // defaultColormap = [[ 0.        ,  0.        ,  0.3 ,  0.0       *(cmax-cmin)+cmin],
+    // [ 0.        ,  0.        ,  0.48666667,  0.06666667*(cmax-cmin)+cmin],
+    // [ 0.        ,  0.        ,  0.67333333,  0.13333333*(cmax-cmin)+cmin],
+    // [ 0.        ,  0.        ,  0.86      ,  0.2       *(cmax-cmin)+cmin],
+    // [ 0.06666667,  0.06666667,  1.        ,  0.26666667*(cmax-cmin)+cmin],
+    // [ 0.33333333,  0.33333333,  1.        ,  0.33333333*(cmax-cmin)+cmin],
+    // [ 0.6       ,  0.6       ,  1.        ,  0.4       *(cmax-cmin)+cmin],
+    // [ 0.86666667,  0.86666667,  1.        ,  0.46666667*(cmax-cmin)+cmin],
+    // [ 1.        ,  0.86666667,  0.86666667,  0.53333333*(cmax-cmin)+cmin],
+    // [ 1.        ,  0.6       ,  0.6       ,  0.6       *(cmax-cmin)+cmin],
+    // [ 1.        ,  0.33333333,  0.33333333,  0.66666667*(cmax-cmin)+cmin],
+    // [ 1.        ,  0.06666667,  0.06666667,  0.73333333*(cmax-cmin)+cmin],
+    // [ 0.9       ,  0.        ,  0.        ,  0.8       *(cmax-cmin)+cmin],
+    // [ 0.76666667,  0.        ,  0.        ,  0.86666667*(cmax-cmin)+cmin],
+    // [ 0.63333333,  0.        ,  0.        ,  0.93333333*(cmax-cmin)+cmin],
+    // [ 0.5       ,  0.        ,  0.        ,  1.0       *(cmax-cmin)+cmin]];
     
-    defaultColors = [[ 0.        ,  0.        ,  1.        ,  0.        *(cmax-cmin)+cmin],
-    [ 0.13333333,  0.13333333,  1.        ,  0.06666667*(cmax-cmin)+cmin],
-    [ 0.26666667,  0.26666667,  1.        ,  0.13333333*(cmax-cmin)+cmin],
-    [ 0.4       ,  0.4       ,  1.        ,  0.2       *(cmax-cmin)+cmin],
-    [ 0.53333333,  0.53333333,  1.        ,  0.26666667*(cmax-cmin)+cmin],
-    [ 0.66666667,  0.66666667,  1.        ,  0.33333333*(cmax-cmin)+cmin],
-    [ 0.8       ,  0.8       ,  1.        ,  0.4       *(cmax-cmin)+cmin],
-    [ 0.93333333,  0.93333333,  1.        ,  0.46666667*(cmax-cmin)+cmin],
-    [ 1.        ,  0.93333333,  0.93333333,  0.53333333*(cmax-cmin)+cmin],
-    [ 1.        ,  0.8       ,  0.8       ,  0.6       *(cmax-cmin)+cmin],
-    [ 1.        ,  0.66666667,  0.66666667,  0.66666667*(cmax-cmin)+cmin],
-    [ 1.        ,  0.53333333,  0.53333333,  0.73333333*(cmax-cmin)+cmin],
-    [ 1.        ,  0.4       ,  0.4       ,  0.8       *(cmax-cmin)+cmin],
-    [ 1.        ,  0.26666667,  0.26666667,  0.86666667*(cmax-cmin)+cmin],
-    [ 1.        ,  0.13333333,  0.13333333,  0.93333333*(cmax-cmin)+cmin],
-    [ 1.        ,  0.        ,  0.        ,  1.        *(cmax-cmin)+cmin]];
+    // defaultColormap = [[ 0.        ,  0.        ,  1.        ,  0.        *(cmax-cmin)+cmin],
+    // [ 0.13333333,  0.13333333,  1.        ,  0.06666667*(cmax-cmin)+cmin],
+    // [ 0.26666667,  0.26666667,  1.        ,  0.13333333*(cmax-cmin)+cmin],
+    // [ 0.4       ,  0.4       ,  1.        ,  0.2       *(cmax-cmin)+cmin],
+    // [ 0.53333333,  0.53333333,  1.        ,  0.26666667*(cmax-cmin)+cmin],
+    // [ 0.66666667,  0.66666667,  1.        ,  0.33333333*(cmax-cmin)+cmin],
+    // [ 0.8       ,  0.8       ,  1.        ,  0.4       *(cmax-cmin)+cmin],
+    // [ 0.93333333,  0.93333333,  1.        ,  0.46666667*(cmax-cmin)+cmin],
+    // [ 1.        ,  0.93333333,  0.93333333,  0.53333333*(cmax-cmin)+cmin],
+    // [ 1.        ,  0.8       ,  0.8       ,  0.6       *(cmax-cmin)+cmin],
+    // [ 1.        ,  0.66666667,  0.66666667,  0.66666667*(cmax-cmin)+cmin],
+    // [ 1.        ,  0.53333333,  0.53333333,  0.73333333*(cmax-cmin)+cmin],
+    // [ 1.        ,  0.4       ,  0.4       ,  0.8       *(cmax-cmin)+cmin],
+    // [ 1.        ,  0.26666667,  0.26666667,  0.86666667*(cmax-cmin)+cmin],
+    // [ 1.        ,  0.13333333,  0.13333333,  0.93333333*(cmax-cmin)+cmin],
+    // [ 1.        ,  0.        ,  0.        ,  1.        *(cmax-cmin)+cmin]];
 
-    colors = output.colormap !== undefined ? output.colormap : defaultColors;    
+    let cmin = -100;
+    let cmax = 100;
+    defaultColormap = {
+        thresholds: [  0.0       *(cmax-cmin)+cmin, 
+            0.06666667*(cmax-cmin)+cmin, 
+            0.13333333*(cmax-cmin)+cmin, 
+            0.2       *(cmax-cmin)+cmin, 
+            0.26666667*(cmax-cmin)+cmin, 
+            0.33333333*(cmax-cmin)+cmin, 
+            0.4       *(cmax-cmin)+cmin, 
+            0.46666667*(cmax-cmin)+cmin, 
+            0.53333333*(cmax-cmin)+cmin, 
+            0.6       *(cmax-cmin)+cmin, 
+            0.66666667*(cmax-cmin)+cmin, 
+            0.73333333*(cmax-cmin)+cmin, 
+            0.8       *(cmax-cmin)+cmin, 
+            0.86666667*(cmax-cmin)+cmin, 
+            0.93333333*(cmax-cmin)+cmin,
+            1.0       *(cmax-cmin)+cmin ],
+        rgba: [[ 0.        ,  0.        ,  0.3 ,  1.0],
+        [ 0.        ,  0.        ,  0.48666667,  1.0],
+        [ 0.        ,  0.        ,  0.67333333,  1.0],
+        [ 0.        ,  0.        ,  0.86      ,  1.0],
+        [ 0.06666667,  0.06666667,  1.        ,  1.0],
+        [ 0.33333333,  0.33333333,  1.        ,  1.0],
+        [ 0.6       ,  0.6       ,  1.        ,  0.5],
+        [ 0.86666667,  0.86666667,  1.        ,  0.0],
+        [ 1.        ,  0.86666667,  0.86666667,  0.5],
+        [ 1.        ,  0.6       ,  0.6       ,  1.0],
+        [ 1.        ,  0.33333333,  0.33333333,  1.0],
+        [ 1.        ,  0.06666667,  0.06666667,  1.0],
+        [ 0.9       ,  0.        ,  0.        ,  1.0],
+        [ 0.76666667,  0.        ,  0.        ,  1.0],
+        [ 0.63333333,  0.        ,  0.        ,  1.0],
+        [ 0.5       ,  0.        ,  0.        ,  1.0]]
+    }
+
+    colormap = output.colormap !== undefined ? output.colormap : defaultColormap;    
     
     // flatten the array
-    colors = colors.reduce((a,b)=>{
+    colormap.rgba = colormap.rgba.reduce((a,b)=>{
         return a.concat(b);
     });
 
@@ -243,16 +280,74 @@ let Model = function(data, output){
         initialShader = compileShader(gl.FRAGMENT_SHADER,`
             precision highp float;
             
+            varying vec2 vUv;
+            
             uniform sampler2D bathymetry;
             uniform sampler2D initialSurface;
 
-            varying vec2 vUv;
+            uniform vec2 texel; 
+            
+            uniform float L;
+            uniform float W;
+            uniform float ce;
+            uniform float cn;
+            uniform float xmin;
+            uniform float xmax;
+            uniform float ymin;
+            uniform float ymax;
+
+            uniform int coordinates;
+
+            const int CARTESIAN = 0;
+            const int SPHERICAL = 1;
+
+            const float Rearth = 6378000.0;
+            
+
+
+            vec2 simpleProjection(float latin, float lonin, float lat0, float lon0){
+                float pi = 3.141592653589793 ;
+                float y = Rearth*(latin-lat0)*pi/180.0;
+                float x = Rearth*cos(lat0*pi/180.0)*(lonin-lon0)*pi/180.0;
+
+                return vec2(x,y);
+
+            }
 
             void main()
             { 
+
+                // normalize vUv so it is defined 1-1 in [0,1] 
+                // this way the first pixel corresponds to xmin and the last to xmax, exactly
+
+                float nx = 1.0/texel.x;
+                float ny = 1.0/texel.y;
+                float V = (vUv.y-0.5*texel.y)/((ny-1.0)*texel.y);
+                float U = (vUv.x-0.5*texel.x)/((nx-1.0)*texel.x);
+                float n = ymin + V*(ymax-ymin);
+                float e = xmin + U*(xmax-xmin);
+
+                // center on reference point and make projection if necessary
+                vec2 pos;
+                if(coordinates==CARTESIAN){
+                    pos = vec2(e-ce,n-cn);
+                }
+                else if(coordinates==SPHERICAL){
+                    // vec2 pos = stereographic_projection(n,e,cn,ce);
+                    pos = simpleProjection(n,e,cn,ce);
+                }
+
+                float eta = 0.0;
+                if (abs(pos.x)<L/2.0 && abs(pos.y)<W/2.0){
+
+                    float u = (pos.x+L/2.0)/L;
+                    float v = (pos.y+W/2.0)/W;
+                    eta  = texture2D(initialSurface, vec2(u,v)).r;
+                }
+
                 float h = texture2D(bathymetry, vUv).r;
-                h = max(h,0.0);
-                float eta = texture2D(initialSurface, vUv).r;
+                h = max(0.0, h);
+
                 gl_FragColor  = vec4(eta, 0.0, 0.0, h);
             }    
         `);
@@ -1047,27 +1142,28 @@ let Model = function(data, output){
             const int nColors = 16;            
             uniform sampler2D field;
             uniform vec4 colormap[16];
+            uniform float thresholds[16];
             uniform int displayedChannel;
             
             varying vec2 vUv;
 
-            vec3 getPseudoColor(float value){
-                vec3 pseudoColor;
+            vec4 getPseudoColor(float value){
+                vec4 pseudoColor;
 
-                if(value <= colormap[0].a){
-                    pseudoColor = colormap[0].rgb;
+                if(value <= thresholds[0]){
+                    pseudoColor = colormap[0];
                 }
-                else if (value > colormap[16-1].a){
-                    pseudoColor = colormap[16-1].rgb;
+                else if (value > thresholds[16-1]){
+                    pseudoColor = colormap[16-1];
                 }
                 else{
                     for (int i=1; i<16; i++){
                         vec4 cleft = colormap[i-1];
                         vec4 cright = colormap[i];
             
-                        if (value>cleft.a && value <=cright.a){
-                            float t = (value - cleft.a)/(cright.a - cleft.a);
-                            pseudoColor = mix(cleft.rgb, cright.rgb, t);
+                        if (value>thresholds[i-1] && value <= thresholds[i]){
+                            float t = (value - thresholds[i-1])/(thresholds[i] - thresholds[i-1]);
+                            pseudoColor = mix(cleft, cright, t);
                             break;
                         }
                     }
@@ -1089,10 +1185,14 @@ let Model = function(data, output){
                     uij = texture2D(field, vUv).a;
                 }
 
-                vec3 color = getPseudoColor(uij);
+                float h = texture2D(field, vUv).a;
 
-                float alpha  = pow(abs(uij),0.2);
-                gl_FragColor  = vec4(color, alpha);
+                vec4 color = getPseudoColor(uij);
+
+                color.a = color.a * step(1.0, h);
+
+                // color.a = 1.0;   
+                gl_FragColor  = color;
             }    
         `);       
 
@@ -1241,6 +1341,24 @@ let Model = function(data, output){
         gl.uniform1i(initialProgram.uniforms.bathymetry, bathymetry.texture.textureId);
         gl.uniform1i(initialProgram.uniforms.initialSurface, initialSurface.texture.textureId);
 
+        gl.uniform2f(initialProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
+
+        gl.uniform1f(initialProgram.uniforms.xmin, domain.xmin) ;
+        gl.uniform1f(initialProgram.uniforms.xmax, domain.xmax) ;
+        gl.uniform1f(initialProgram.uniforms.ymin, domain.ymin) ;
+        gl.uniform1f(initialProgram.uniforms.ymax, domain.ymax) ;
+
+        gl.uniform1f(initialProgram.uniforms.L, data.initialSurface.L);
+        gl.uniform1f(initialProgram.uniforms.W, data.initialSurface.W);
+        gl.uniform1f(initialProgram.uniforms.ce, data.initialSurface.ce);
+        gl.uniform1f(initialProgram.uniforms.cn, data.initialSurface.cn);
+        
+        if(domain.coordinates == 'cartesian'){
+            gl.uniform1i(initialProgram.uniforms.coordinates, 0);
+        }
+        else if(domain.coordinates == 'spherical'){
+            gl.uniform1i(initialProgram.uniforms.coordinates, 1);
+        }
         renderFrameBuffer(wave.first.fbo);
     }
 
@@ -1395,7 +1513,8 @@ let Model = function(data, output){
         
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         gl.useProgram(displayProgram.program);
-        gl.uniform4fv(displayProgram.uniforms.colormap, new Float32Array(colors));
+        gl.uniform4fv(displayProgram.uniforms.colormap, new Float32Array(colormap.rgba));
+        gl.uniform1fv(displayProgram.uniforms.thresholds, new Float32Array(colormap.thresholds));
         
         let displayedChannel = 0 ;
         if( displayOption === 'heights'){
@@ -1637,7 +1756,7 @@ let Model = function(data, output){
     };
 
     let setEarthquake = ()=>{
-        if(earthquake){
+        if(earthquake.length>0){
             for(let i = 0; i<earthquake.length; i++){
                 if(earthquake[i].lat !== undefined){
                     earthquake[i].cn = earthquake[i].lat;
@@ -1731,13 +1850,13 @@ let Model = function(data, output){
         displayPColor: ()=>{renderDisplayProgram()},
         displayOption,
         set colors(newColors){
-            colors = [... newColors].reduce((a,b)=>{
+            colormap.rgba = [... newColors].reduce((a,b)=>{
                 return a.concat(b);
             });
-            gl.uniform4fv(displayProgram.uniforms.colormap, new Float32Array(colors));   
+            gl.uniform4fv(displayProgram.uniforms.colormap, new Float32Array(colormap.rgba));   
         },
         get colors(){
-            return colors;
+            return colormap.rgba;
         },
         set earthquake(newEarthquake){
             console.log(gl);
