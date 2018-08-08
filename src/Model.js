@@ -785,6 +785,7 @@ let Model = function(data, output){
             const float gx = 1e-5;
             const float g = 9.81;
             const float Rearth = 6378000.0;
+            const float omega = 7.29e-5;
 
 
             float degToRad(float degrees){
@@ -992,7 +993,7 @@ let Model = function(data, output){
                 vec2 front = vec2(0.0, texel.y);
                 vec4 uij = texture2D(u0, vUv);                
                 
-                vec4 uimj, uipj, uimjp, uipjm;
+                vec4 uimj, uipj, uipjp,uimjp, uipjm;
 
                 if(isPeriodic == 1){
                     float uright = mod(vUv.x + right.x, 1.0);
@@ -1000,12 +1001,14 @@ let Model = function(data, output){
                     
                     uimj = texture2D(u0, vec2(uleft, vUv.y));
                     uipj = texture2D(u0, vec2(uright, vUv.y));
+                    uipjp = texture2D(u0, vec2(uright, vUv.y) + front);
                     uimjp = texture2D(u0, vec2(uleft, vUv.y) + front);
                     uipjm = texture2D(u0, vec2(uright, vUv.y) - front);
                 }
                 else{
                     uimj = texture2D(u0, vUv - right);
                     uipj = texture2D(u0, vUv + right);
+                    uipjp = texture2D(u0, vUv + right + front);
                     uimjp = texture2D(u0, vUv - right + front);
                     uipjm = texture2D(u0, vUv + right - front);
 
@@ -1034,15 +1037,27 @@ let Model = function(data, output){
                 
 
                 float M2ij = 0.0;
-                
                 if(hiPlusHalfj > gx){
                     M2ij = uij.g - dt*g*hiPlusHalfj/(Rearth*coslatj*minToRad(dlon))*(eta2ipj - eta2ij);
+
+                    // add coriollis
+                    float Nc = 0.25*(uij.b + uijp.b + uipj.b + uipjp.b);
+                    float R3 = 2.0 * dt * omega * sin(degToRad(latj+0.5*dlat/60.0));
+                    
+                    M2ij = M2ij + R3*Nc;
+                    
                 }
 
-                float N2ij = 0.0;
-                
+                float N2ij = 0.0;                
                 if(hijPlusHalf > gx){
                     N2ij = uij.b - dt*g*hijPlusHalf/(Rearth*minToRad(dlat))*(eta2ijp - eta2ij);
+
+                    // add coriollis
+
+                    float Mc = 0.25*(uij.g + uijp.g + uipj.g + uipjp.g);
+                    float R5 = -2.0 * dt * omega * sin(degToRad(latj));
+                    
+                    N2ij = N2ij + R5*Mc;                    
                 }
 
             
