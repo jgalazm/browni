@@ -102,11 +102,11 @@ let Controller = function(model,data, lifeCycle){
         }
 
         /********************* */
-        let exitLoop = true;
-        while(exitLoop){
+        let stayInLoop = true;
+        while(stayInLoop){
             model.runSimulationStep();                
                 
-            exitLoop = modelStepDidFinish(model, thisController);
+            stayInLoop = modelStepDidFinish(model, thisController);
         }
 
         model.displayPColor();
