@@ -19,3 +19,5 @@ pois.json
 tseries.json
 validation/06_illapel2015/data/cald.csv
 **/*.csv
+validation/04_tohoku2011/calculations/pois_coriolis3
+**/pois_*
