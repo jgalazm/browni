@@ -1013,9 +1013,17 @@ let Model = function(data, output){
                     uipjm = texture2D(u0, vUv + right - front);
 
                 }
-
+                
                 vec4 uijp = texture2D(u0, vUv + front);
                 vec4 uijm = texture2D(u0, vUv - front);
+
+                vec4 uimmj = texture2D(u0, vUv - 2.0*right);
+                vec4 uimjm = texture2D(u0, vUv - right - front);
+                vec4 uipjmm = texture2D(u0, vUv + right + 2.0*front);
+                vec4 uijpp = texture2D(u0, vUv + 2.0 * front);
+                vec4 uimjpp = texture2D(u0, vUv-right + 2.0 * front);
+                vec4 uijmm = texture2D(u0, vUv - 2.0*front);
+                vec4 uimmjp = texture2D(u0, vUv -2.0 * right + front);
                 
                 // mass conservation
                 float eta2ij = updateSurface(vUv, correctedUV(vUv), uij, uimj, uijm);
@@ -1023,6 +1031,24 @@ let Model = function(data, output){
                 float eta2ipj = updateSurface(vUv+right, correctedUV(vUv+right), uipj, uij, uipjm);
 
                 float eta2ijp = updateSurface(vUv+front, correctedUV(vUv+front), uijp, uimjp, uij);
+
+                // necessary for dispersion:
+
+                float eta2ippj = updateSurface(vUv+2.0*front, correctedUV(vUv+2.0*front), uipjp, uijp, uipj);
+                
+                float eta2imj = updateSurface(vUv-front, correctedUV(vUv-front), uimj, uimmj, uimjm);
+
+                float eta2ipjp = updateSurface(vUv+front+right, correctedUV(vUv+front+right), uipjp, uijp, uipj);
+
+                float eta2ipjm = updateSurface(vUv+right-front, correctedUV(vUv+right-front), uipjm, uijm, uipjmm);
+
+                float eta2ijpp = updateSurface(vUv+2.0*front, correctedUV(vUv+2.0*front), uijpp, uimjpp, uijp);
+
+                float eta2ijm = updateSurface(vUv-front, correctedUV(vUv-front), uijm, uimjm, uijmm);
+
+                float eta2imjp = updateSurface(vUv+front-right, correctedUV(vUv+front-right), uimjp, uimmjp, uimj);
+
+                // eta2ippj, eta2ipj, eta2ij, eta2imj, eta2ipjp, eta2ipj, eta2ipjm, eta2ijpp, eta2imjp
 
                 // momentum conservation 
 
@@ -1035,6 +1061,15 @@ let Model = function(data, output){
                 float latj = V*(ymax-ymin)+ymin;
                 float coslatj = cos(degToRad(latj));
                 
+                // dispersion parameters
+                float dx = Rearth*coslatj*minToRad(dlon);
+                float dy = Rearth*minToRad(dlat);
+                float alpha = (4.0*uij.a*uij.a + g * uij.a*dt*dt-dx*dx)/dx/dx;
+                float gamma = alpha + 1.0;
+
+
+
+
 
                 float M2ij = 0.0;
                 if(hiPlusHalfj > gx){
@@ -1046,6 +1081,10 @@ let Model = function(data, output){
                     
                     M2ij = M2ij + R3*Nc;
                     
+                    // dispersion correction
+                    // M2ij = M2ij + alpha*dt/(12.0*dx)*g*hiPlusHalfj*(eta2ippj - 3.0*eta2ipj + 3.0*eta2ij - eta2imj);
+                    // M2ij = M2ij + gamma*dt/(12.0*dy)*g*hiPlusHalfj*(eta2ipjp -2.0*eta2ipj + eta2ipjm);
+                    // M2ij = M2ij - (eta2ipj - 2.0*eta2ij + eta2imj);
                 }
 
                 float N2ij = 0.0;                
@@ -1057,7 +1096,13 @@ let Model = function(data, output){
                     float Mc = 0.25*(uij.g + uijp.g + uipj.g + uipjp.g);
                     float R5 = -2.0 * dt * omega * sin(degToRad(latj));
                     
-                    N2ij = N2ij + R5*Mc;                    
+                    N2ij = N2ij + R5*Mc;              
+                    
+                    // dispersion correction
+
+                    // N2ij = N2ij + alpha*dt/(12.0*dx)*g*hijPlusHalf*(eta2ijpp - 3.0*eta2ijp + 3.0*eta2ij - eta2ijm);
+                    // N2ij = N2ij + gamma*dt/(12.0*dx)*g*hijPlusHalf*(eta2ipjp - 2.0*eta2ijp + eta2imjp);
+                    // N2ij = N2ij - (eta2ipj - 2.0*eta2ij + eta2imj);
                 }
 
             
