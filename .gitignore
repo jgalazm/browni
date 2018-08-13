@@ -21,3 +21,5 @@ validation/06_illapel2015/data/cald.csv
 **/*.csv
 validation/04_tohoku2011/calculations/pois_coriolis3
 **/pois_*
+validation/04_tohoku2011/data/bathymetryEasywave.grd
+validation/04_tohoku2011/data/bathymetry20min
