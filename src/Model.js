@@ -1432,12 +1432,15 @@ let Model = function(data, output){
 
                 vec4 uij = texture2D(u0, vUv);
                 vec4 uipj = texture2D(u0, vUv + right);
+                vec4 uipjp = texture2D(u0, vUv+right+front);
 
                 if(isPeriodic == 1){
                     float uright = mod(vUv.x + right.x, 1.0);
                     float uleft = mod(vUv.x - right.x, 1.0);
                     
                     uipj = texture2D(u0, vec2(uright, vUv.y));
+                    uipjp = texture2D(u0, vec2(uright, vUv.y+front));
+                    
 
                 }
                 vec4 uijp = texture2D(u0, vUv + front);
@@ -1460,11 +1463,25 @@ let Model = function(data, output){
                 if(hiPlusHalfj > gx){
                     M2ij = uij.g - dt*g*hiPlusHalfj/(Rearth*coslatj*minToRad(dlon))*(eta2ipj - eta2ij);
 
+                    // add coriolis
+                    float Nc = 0.25*(uij.b + uijp.b + uipj.b + uipjp.b);
+                    float R3 = 2.0 * dt * omega * sin(degToRad(latj+0.5*dlat/60.0));
+                    
+                    M2ij = M2ij + R3*Nc;
+
                 }
 
                 float N2ij = 0.0;                
                 if(hijPlusHalf > gx){
                     N2ij = uij.b - dt*g*hijPlusHalf/(Rearth*minToRad(dlat))*(eta2ijp - eta2ij);            
+
+                    // add coriolis
+
+                    float Mc = 0.25*(uij.g + uijp.g + uipj.g + uipjp.g);
+                    float R5 = -2.0 * dt * omega * sin(degToRad(latj));
+                    
+                    N2ij = N2ij + R5*Mc;              
+                                        
                 }
 
                 gl_FragColor = vec4( eta2ij, M2ij, N2ij, uij.a);
