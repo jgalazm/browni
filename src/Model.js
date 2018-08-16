@@ -1417,6 +1417,16 @@ let Model = function(data, output){
                 return vec2(U,V);
             }
 
+            vec4 queryPeriodicTexture(vec2 uv){
+                vec4 uij = texture2D(u0, uv);
+                if(isPeriodic == 1){
+                    float uright = mod(uv.x, 1.0);
+                    uij = texture2D(u0, vec2(uright, uv.y));
+                }
+
+                return uij;
+            }
+
 
             void main(){
                 // u = (eta, p, q, h)
@@ -1431,21 +1441,18 @@ let Model = function(data, output){
                 vec2 front = vec2(0.0, texel.y);
 
                 vec4 uij = texture2D(u0, vUv);
-                vec4 uipj = texture2D(u0, vUv + right);
-                vec4 uipjp = texture2D(u0, vUv+right+front);
+                vec4 uipj = queryPeriodicTexture( vUv + right );
+                vec4 uipjp = queryPeriodicTexture( vUv+right+front );
 
-                if(isPeriodic == 1){
-                    float uright = mod(vUv.x + right.x, 1.0);
-                    float uleft = mod(vUv.x - right.x, 1.0);
-                    
-                    uipj = texture2D(u0, vec2(uright, vUv.y));
-                    uipjp = texture2D(u0, vec2(uright, vUv.y+front));
-                    
+                vec4 uijp = queryPeriodicTexture( vUv + front);
 
-                }
-                vec4 uijp = texture2D(u0, vUv + front);
-
-
+                vec4 u2ippj = queryPeriodicTexture( vUv + right*2.0);
+                vec4 u2imj = queryPeriodicTexture( vUv - right);
+                vec4 u2ipjp = queryPeriodicTexture( vUv + right + front);
+                vec4 u2ipjm = queryPeriodicTexture( vUv + right - front);
+                vec4 u2ijpp = queryPeriodicTexture( vUv + front*2.0);
+                vec4 u2ijm = queryPeriodicTexture( vUv - front);
+                vec4 u2imjp = queryPeriodicTexture( vUv - right + front);;
 
                 float hiPlusHalfj = 0.5*(uij.a + uipj.a);
                 float hijPlusHalf = 0.5*(uij.a + uijp.a);
@@ -1459,6 +1466,23 @@ let Model = function(data, output){
                 float eta2ipj = uipj.r;
                 float eta2ijp = uijp.r;
 
+                // float eta2ippj = u2ippj.r;
+                // float eta2imj = u2imj.r;
+                // float eta2ipjp = u2ipjp.r;
+                // float eta2ipjm = u2ipjm.r;
+
+                // float eta2ijpp = u2ijpp.r;
+                // float eta2ijm = u2ijm.r;
+                // float eta2imjp = u2imjp.r;
+
+
+                // // dispersion parameters
+                // float dx = Rearth*coslatj*minToRad(dlon);
+                // float dy = Rearth*minToRad(dlat);
+                // float alpha = (4.0*uij.a*uij.a + g * uij.a*dt*dt-dx*dx)/dx/dx;
+                // float gamma = alpha + 1.0;
+
+
                 float M2ij = 0.0;
                 if(hiPlusHalfj > gx){
                     M2ij = uij.g - dt*g*hiPlusHalfj/(Rearth*coslatj*minToRad(dlon))*(eta2ipj - eta2ij);
@@ -1468,6 +1492,12 @@ let Model = function(data, output){
                     float R3 = 2.0 * dt * omega * sin(degToRad(latj+0.5*dlat/60.0));
                     
                     M2ij = M2ij + R3*Nc;
+
+                    // dispersion correction
+
+                    // M2ij = M2ij - alpha*dt/(12.0*dx)*g*hiPlusHalfj*(eta2ippj - 3.0*eta2ipj + 3.0*eta2ij - eta2imj);
+                    // M2ij = M2ij - gamma*dt/(12.0*dx)*g*hiPlusHalfj*(eta2ipjp -2.0*eta2ipj + eta2ipjm);
+                    // M2ij = M2ij + dt*(eta2ipj - 2.0*eta2ij + eta2imj);
 
                 }
 
@@ -1481,6 +1511,12 @@ let Model = function(data, output){
                     float R5 = -2.0 * dt * omega * sin(degToRad(latj));
                     
                     N2ij = N2ij + R5*Mc;              
+
+                    // dispersion correction
+
+                    // N2ij = N2ij - alpha*dt/(12.0*dy)*g*hijPlusHalf*(eta2ijpp - 3.0*eta2ijp + 3.0*eta2ij - eta2ijm);
+                    // N2ij = N2ij - gamma*dt/(12.0*dy)*g*hijPlusHalf*(eta2ipjp - 2.0*eta2ijp + eta2imjp);
+                    // N2ij = N2ij + dt*(eta2ipj - 2.0*eta2ij + eta2imj);                    
                                         
                 }
 
