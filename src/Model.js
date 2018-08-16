@@ -1607,7 +1607,7 @@ let Model = function(data, output){
 
                 vec4 color = getPseudoColor(uij);
 
-                color.a = color.a * step(1.0, h);
+                color.a = color.a * step(0.0, h);
 
                 // color.a = 1.0;   
                 gl_FragColor  = color;
@@ -1769,10 +1769,10 @@ let Model = function(data, output){
         gl.uniform1f(initialProgram.uniforms.ymin, domain.ymin) ;
         gl.uniform1f(initialProgram.uniforms.ymax, domain.ymax) ;
 
-        gl.uniform1f(initialProgram.uniforms.L, data.initialSurface.L);
-        gl.uniform1f(initialProgram.uniforms.W, data.initialSurface.W);
-        gl.uniform1f(initialProgram.uniforms.ce, data.initialSurface.ce);
-        gl.uniform1f(initialProgram.uniforms.cn, data.initialSurface.cn);
+        gl.uniform1f(initialProgram.uniforms.L, initialSurface.L);
+        gl.uniform1f(initialProgram.uniforms.W, initialSurface.W);
+        gl.uniform1f(initialProgram.uniforms.ce, initialSurface.ce);
+        gl.uniform1f(initialProgram.uniforms.cn, initialSurface.cn);
         
         if(domain.coordinates == 'cartesian'){
             gl.uniform1i(initialProgram.uniforms.coordinates, 0);
@@ -2273,6 +2273,14 @@ let Model = function(data, output){
             initialSurface.texture = createTextureFromMatrix (
                 initialSurface.array, initialSurface.textureId );
 
+                initialSurface = Object.assign(data.initialSurface, initialSurface);
+                if(data.initialSurface.cn === undefined || data.initialSurface.ce === undefined ||
+                    data.initialSurface.L === undefined || data.initialSurface.W === undefined){
+                        initialSurface.ce = 0.5*(domain.xmin + domain.xmax);
+                        initialSurface.cn = 0.5*(domain.ymin + domain.ymax);
+                        initialSurface.L = domain.xmax - domain.xmin;
+                        initialSurface.W = domain.ymax - domain.ymin;
+                }
         }
         
         setTimeStep(data);
