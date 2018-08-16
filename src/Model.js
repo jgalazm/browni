@@ -1609,7 +1609,6 @@ let Model = function(data, output){
 
                 color.a = color.a * step(0.0, h);
 
-                // color.a = 1.0;   
                 gl_FragColor  = color;
             }    
         `);       
@@ -1617,12 +1616,16 @@ let Model = function(data, output){
         initialProgram = shaderProgram(vertexShader, initialShader);
         okadaProgram = shaderProgram(vertexShader, okadaShader);
         asteroidProgram = shaderProgram(vertexShader, asteroidShader);
-        cartesianWaveProgram = shaderProgram(vertexShader, cartesianWaveShader);        
+
+        cartesianWaveProgram = shaderProgram(vertexShader, cartesianWaveShader);       
+        
+        
         sphericalWaveProgram = shaderProgram(vertexShader, sphericalWaveShader);
         dispersiveMassStepProgram = shaderProgram(vertexShader, dispersiveMassStepShader);
         dispersiveMomentumStepProgram = shaderProgram(vertexShader, dispersiveMomentumStepShader);
-        displayProgram = shaderProgram(vertexShader, displayShader);
+        
         maxHeightsProgram = shaderProgram(vertexShader, maxHeightsShader);
+        displayProgram = shaderProgram(vertexShader, displayShader);
     }
 
     let createBuffers = function(){ 
@@ -1887,10 +1890,6 @@ let Model = function(data, output){
 
         gl.uniform1f(cartesianWaveProgram.uniforms.dx, discretization.dx);
         gl.uniform1f(cartesianWaveProgram.uniforms.dy, discretization.dy);
-        gl.uniform1f(cartesianWaveProgram.uniforms.xmin, domain.xmin);
-        gl.uniform1f(cartesianWaveProgram.uniforms.xmax, domain.xmax);
-        gl.uniform1f(cartesianWaveProgram.uniforms.ymin, domain.ymin);
-        gl.uniform1f(cartesianWaveProgram.uniforms.ymax, domain.ymax);
         gl.uniform1f(cartesianWaveProgram.uniforms.dt, discretization.dt);
 
         renderFrameBuffer(wave.second.fbo);
