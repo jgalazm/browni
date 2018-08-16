@@ -4,11 +4,13 @@ let Model = function(data, output){
     let gl, isWebGL2;
     let vertexShader, initialShader, okadaShader, asteroidShader,
         cartesianWaveShader, sphericalWaveShader, 
+        cartesianDispersiveMassShader, cartesianDispersiveMomentumShader,
         dispersiveMassStepShader, dispersiveMomentumStepShader, 
         maxHeightsShader,displayShader;
     
     let initialProgram, okadaProgram, asteroidProgram,
         cartesianWaveProgram, sphericalWaveProgram, 
+        cartesianDispersiveMassProgram, cartesianDispersiveMomentumProgram, 
         dispersiveMassStepProgram, dispersiveMomentumStepProgram,
         maxHeightsProgram, displayProgram  ;
 
@@ -770,6 +772,81 @@ let Model = function(data, output){
                 
                 gl_FragColor  = u2ij;
             }    
+        `);
+
+        cartesianDispersiveMassShader = compileShader(gl.FRAGMENT_SHADER,
+            `
+                precision highp float;
+                
+                varying vec2 vUv;
+
+                uniform sampler2D u0;
+                uniform vec2 texel;
+                uniform float dt;
+                uniform float dx;
+                uniform float dy;
+
+                const float eps = 1e-2;
+
+                float massEquation(vec4 uij, vec4 uimj, vec4 uijm){
+                    float eta = 0.0;
+                    float hij = uij.a;
+                    if(hij > eps){
+                        eta = uij.r -dt/dx*(uij.g-uimj.g) -dt/dy*(uij.b-uijm.b);
+                    }
+                    return  eta;
+                }
+
+                void main(){
+                    vec4 uij  = texture2D(u0, vUv );
+                    vec4 uimj = texture2D(u0, vUv+vec2(-texel.x,0.0));
+                    vec4 uijm = texture2D(u0, vUv+vec2(0.0,-texel.y));
+
+                    vec4 u2ij = uij;
+
+                    u2ij.r = massEquation(uij, uimj, uijm);
+
+                    gl_FragColor = u2ij;
+
+                }
+            `
+        );
+
+        cartesianDispersiveMomentumShader = compileShader(gl.FRAGMENT_SHADER,`
+            precision highp float;
+                
+            varying vec2 vUv;
+
+            uniform sampler2D u0;
+            uniform vec2 texel;
+            uniform float dt;
+            uniform float dx;
+            uniform float dy;
+
+            const float g = 9.81;
+            const float eps = 1e-2;
+            
+            void main(){ 
+                vec4 u2ij  = texture2D(u0, vUv );
+                vec4 u2ipj  = texture2D(u0, vUv + vec2(texel.x, 0.0));
+                vec4 u2ijp = texture2D(u0, vUv +vec2(0.0, texel.y));
+
+                
+                float hij = u2ij.a;
+                float hipj = u2ipj.a;
+                float hijp = u2ijp.a;
+
+                if(hij>eps && hipj>eps){
+                    // if not dry, otherwise defaults to 0.0;
+                    u2ij.g = u2ij.g - g*hij*dt/dx*(u2ipj.r - u2ij.r);
+                }
+                
+                if(hij>eps && hijp>eps){
+                    u2ij.b = u2ij.b - g*hij*dt/dy*(u2ijp.r - u2ij.r);
+                }
+                
+                gl_FragColor  = u2ij;
+            }   
         `);
 
         sphericalWaveShader = compileShader(gl.FRAGMENT_SHADER,`
@@ -1618,6 +1695,8 @@ let Model = function(data, output){
         asteroidProgram = shaderProgram(vertexShader, asteroidShader);
 
         cartesianWaveProgram = shaderProgram(vertexShader, cartesianWaveShader);       
+        cartesianDispersiveMassProgram = shaderProgram(vertexShader, cartesianDispersiveMassShader);       
+        cartesianDispersiveMomentumProgram = shaderProgram(vertexShader, cartesianDispersiveMomentumShader);       
         
         
         sphericalWaveProgram = shaderProgram(vertexShader, sphericalWaveShader);
@@ -1897,6 +1976,41 @@ let Model = function(data, output){
 
     }
 
+    let renderCartesianDispersiveMassProgram = function(){
+        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
+        
+        gl.useProgram(cartesianDispersiveMassProgram.program);
+        
+        gl.uniform1i(cartesianDispersiveMassProgram.uniforms.u0, wave.first.textureId);
+        gl.uniform2f(cartesianDispersiveMassProgram.uniforms.texel, 1/discretization.numberOfCells[1], 1/discretization.numberOfCells[1]);
+        gl.uniform1f(cartesianDispersiveMassProgram.uniforms.dt, discretization.dt);
+        gl.uniform1f(cartesianDispersiveMassProgram.uniforms.dx, discretization.dx);
+        gl.uniform1f(cartesianDispersiveMassProgram.uniforms.dy, discretization.dy);
+
+        renderFrameBuffer(wave.second.fbo);
+        wave.swap();
+    };
+
+    let renderCartesianDispersiveMomentumProgram = function(){
+        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
+        
+        gl.useProgram(cartesianDispersiveMomentumProgram.program);
+
+        gl.uniform1i(cartesianDispersiveMomentumProgram.uniforms.u0, wave.first.textureId);
+        gl.uniform2f(cartesianDispersiveMomentumProgram.uniforms.texel, 1/discretization.numberOfCells[1], 1/discretization.numberOfCells[1]);
+        gl.uniform1f(cartesianDispersiveMomentumProgram.uniforms.dt, discretization.dt);
+        gl.uniform1f(cartesianDispersiveMomentumProgram.uniforms.dx, discretization.dx);
+        gl.uniform1f(cartesianDispersiveMomentumProgram.uniforms.dy, discretization.dy);
+
+        renderFrameBuffer(wave.second.fbo);
+        wave.swap();
+    };
+
+    let renderCartesianDispersiveProgram = function(){
+        renderCartesianDispersiveMassProgram();
+        renderCartesianDispersiveMomentumProgram();
+    };
+
     let renderSphericalProgram = function(){        
         gl.useProgram(sphericalWaveProgram.program);
         gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
@@ -2144,8 +2258,14 @@ let Model = function(data, output){
             }
         }
         else{
-            // choose dispersive solver
-            renderDispersiveWave();
+            // choose non-dispersive solver
+            if(domain.coordinates == 'cartesian'){
+                renderCartesianProgram();
+                
+            }
+            else if(domain.coordinates == 'spherical'){
+                renderCartesianDispersiveProgram();                    
+            }
         }
 
 
