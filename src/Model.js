@@ -827,25 +827,68 @@ let Model = function(data, output){
             const float eps = 1e-2;
             
             void main(){ 
-                vec4 u2ij  = texture2D(u0, vUv );
-                vec4 u2ipj  = texture2D(u0, vUv + vec2(texel.x, 0.0));
-                vec4 u2ijp = texture2D(u0, vUv +vec2(0.0, texel.y));
+                vec2 right = vec2(texel.x, 0.0);
+                vec2 front = vec2(0.0, texel.y);
 
+                vec4 u2ij  = texture2D(u0, vUv );
+                vec4 u2ipj  = texture2D(u0, vUv + right);
+                vec4 u2ijp = texture2D(u0, vUv + front);
+
+                vec4 u2ippj = texture2D(u0, vUv + 2.0*right);
+                vec4 u2imj = texture2D(u0, vUv - right);
+                vec4 u2ipjp = texture2D(u0, vUv + right + front);
+                vec4 u2ipjm = texture2D(u0, vUv + right - front);
+                vec4 u2ijpp = texture2D(u0, vUv + 2.0*front);
+                vec4 u2ijm = texture2D(u0, vUv - front);
+                vec4 u2imjp = texture2D(u0, vUv - right + front);
+
+                float eta2ij = u2ij.r;
+                float eta2ippj = u2ippj.r;
+                float eta2ipj = u2ipj.r;
+                float eta2imj = u2imj.r;
+                float eta2ipjp = u2ipjp.r;
+                float eta2ipjm = u2ipjm.r;
                 
+                float eta2ijpp = u2ijpp.r;
+                float eta2ijp = u2ijp.r;
+                float eta2ijm = u2ijm.r;
+                float eta2imjp = u2imjp.r;
+
                 float hij = u2ij.a;
                 float hipj = u2ipj.a;
                 float hijp = u2ijp.a;
 
+
+
+                float alpha = (4.0*hij*hij + g*hij*dt*dt-dx*dx)/dx/dx;
+                float gamma = alpha + 1.0;
+
+                float M2ij = 0.0;
                 if(hij>eps && hipj>eps){
+                    
                     // if not dry, otherwise defaults to 0.0;
-                    u2ij.g = u2ij.g - g*hij*dt/dx*(u2ipj.r - u2ij.r);
+                    M2ij = u2ij.g - g*hij*dt/dx*(u2ipj.r - u2ij.r);
+                    
+                    
+                    // dispersion correction
+                    float hiPlusHalfj = 0.5*(hij + hipj);
+                    M2ij = M2ij - alpha*dt/(12.0*dx)*g*hiPlusHalfj*(eta2ippj - 3.0*eta2ipj + 3.0*eta2ij - eta2imj);
+                    M2ij = M2ij - gamma*dt/(12.0*dx)*g*hiPlusHalfj*(eta2ipjp -2.0*eta2ipj + eta2ipjm);
+                    M2ij = M2ij + gamma*dt/(12.0*dx)*g*hiPlusHalfj*(eta2ijp - 2.0*eta2ij + eta2ijm);
                 }
                 
+                float N2ij = 0.0;
                 if(hij>eps && hijp>eps){
-                    u2ij.b = u2ij.b - g*hij*dt/dy*(u2ijp.r - u2ij.r);
+                    N2ij = u2ij.b - g*hij*dt/dy*(u2ijp.r - u2ij.r);
+                    
+                    float hijPlusHalf = 0.5*(hij + hijp);
+                    // dispersion correction                    
+                    N2ij = N2ij - alpha*dt/(12.0*dy)*g*hijPlusHalf*(eta2ijpp - 3.0*eta2ijp + 3.0*eta2ij - eta2ijm);
+                    N2ij = N2ij - gamma*dt/(12.0*dy)*g*hijPlusHalf*(eta2ipjp - 2.0*eta2ijp + eta2imjp);
+                    N2ij = N2ij + gamma*dt/(12.0*dy)*g*hijPlusHalf*(eta2ipj - 2.0*eta2ij + eta2imj);
                 }
                 
-                gl_FragColor  = u2ij;
+                gl_FragColor  = vec4(eta2ij, M2ij, N2ij, hij);
             }   
         `);
 
@@ -2242,19 +2285,20 @@ let Model = function(data, output){
         
         return array;
     }
-
+    
     let nextgrid = 0;
     let runSimulationStep = function(){
         discretization.stepNumber++;
-
-        if(domain.equations !== 'dispersive'){
-            // choose non-dispersive solver
+        
+        
+        if(domain.equations == 'dispersive'){
+            // choose dispersive solver
             if(domain.coordinates == 'cartesian'){
-                renderCartesianProgram();
+                renderCartesianDispersiveProgram();
                 
             }
             else if(domain.coordinates == 'spherical'){
-                renderSphericalProgram();                    
+                renderDispersiveWave();                    
             }
         }
         else{
@@ -2264,9 +2308,10 @@ let Model = function(data, output){
                 
             }
             else if(domain.coordinates == 'spherical'){
-                renderCartesianDispersiveProgram();                    
+                renderSphericalProgram();                    
             }
         }
+    
 
 
         renderMaxHeightsProgram();
