@@ -2007,7 +2007,7 @@ let Model = function(data, output){
 
         gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
         gl.useProgram(cartesianWaveProgram.program);
-        gl.uniform2f(cartesianWaveProgram.uniforms.texel, 1/discretization.numberOfCells[1], 1/discretization.numberOfCells[1]);
+        gl.uniform2f(cartesianWaveProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
         gl.uniform1i(cartesianWaveProgram.uniforms.u0, wave.first.textureId);
 
         gl.uniform1f(cartesianWaveProgram.uniforms.dx, discretization.dx);
@@ -2025,7 +2025,7 @@ let Model = function(data, output){
         gl.useProgram(cartesianDispersiveMassProgram.program);
         
         gl.uniform1i(cartesianDispersiveMassProgram.uniforms.u0, wave.first.textureId);
-        gl.uniform2f(cartesianDispersiveMassProgram.uniforms.texel, 1/discretization.numberOfCells[1], 1/discretization.numberOfCells[1]);
+        gl.uniform2f(cartesianDispersiveMassProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
         gl.uniform1f(cartesianDispersiveMassProgram.uniforms.dt, discretization.dt);
         gl.uniform1f(cartesianDispersiveMassProgram.uniforms.dx, discretization.dx);
         gl.uniform1f(cartesianDispersiveMassProgram.uniforms.dy, discretization.dy);
@@ -2040,7 +2040,7 @@ let Model = function(data, output){
         gl.useProgram(cartesianDispersiveMomentumProgram.program);
 
         gl.uniform1i(cartesianDispersiveMomentumProgram.uniforms.u0, wave.first.textureId);
-        gl.uniform2f(cartesianDispersiveMomentumProgram.uniforms.texel, 1/discretization.numberOfCells[1], 1/discretization.numberOfCells[1]);
+        gl.uniform2f(cartesianDispersiveMomentumProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
         gl.uniform1f(cartesianDispersiveMomentumProgram.uniforms.dt, discretization.dt);
         gl.uniform1f(cartesianDispersiveMomentumProgram.uniforms.dx, discretization.dx);
         gl.uniform1f(cartesianDispersiveMomentumProgram.uniforms.dy, discretization.dy);
