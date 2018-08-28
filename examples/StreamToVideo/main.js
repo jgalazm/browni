@@ -29,8 +29,6 @@ let output = {
     displayWidth: 512,
     displayHeight: 512,
 };
-var play, video1, video2, mediaRecorder;
-var  recordedBlobs = [];
 
 lifeCycle = {
     dataWasLoaded: (model) => {
