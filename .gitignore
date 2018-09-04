@@ -33,3 +33,5 @@ eWave.poi*
 easywave.*
 poi_*.lst
 *.msg
+bathymetry*.grd
+bathymetry*min
