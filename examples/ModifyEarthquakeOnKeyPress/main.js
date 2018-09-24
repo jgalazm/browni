@@ -24,7 +24,7 @@ let data = {
 }
 
 let output = {
-    stopTime: 1,
+    stopTime: 10,
     displayWidth: 512,
     displayHeight: 512,
 };
