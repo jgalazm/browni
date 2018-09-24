@@ -120,7 +120,7 @@ let Controller = function(model,data, lifeCycle){
         }
         else if(data.loop){
 
-            model.newEarthquake = model.earthquake;
+            model.earthquake = model.earthquake;
             iterationDidFinish(model, thisController, animate);
 
         }
