@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Intro to SceneView - Create a 3D map</title>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.9/esri/css/main.css">
+    <script src="https://js.arcgis.com/4.9/"></script>
+
+    <style>
+        html, body, #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/SceneView"
+        ], function (Map, SceneView) {
+            // Code to create the map and view will go here
+            var map = new Map({
+                basemap: "streets",
+                ground: "world-elevation"
+            });
+
+            var view = new SceneView({
+                container: "viewDiv",  // Reference to the DOM node that will contain the view
+                map: map  // References the map object created in step 3
+            });
+        });
+    </script>
+</head>
+
+<body>
+        <div id="viewDiv"></div>
+</body>
+
+</html>
