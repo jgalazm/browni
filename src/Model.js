@@ -252,6 +252,7 @@ let Model = function(data, output){
             uniform float xmax;
             uniform float ymin;
             uniform float ymax;
+            uniform bool isSubrectangle;
 
             uniform int coordinates;
 
@@ -295,11 +296,16 @@ let Model = function(data, output){
                 }
 
                 float eta = 0.0;
-                if (abs(pos.x)<L/2.0 && abs(pos.y)<W/2.0){
-
-                    float u = (pos.x+L/2.0)/L;
-                    float v = (pos.y+W/2.0)/W;
-                    eta  = texture2D(initialSurface, vec2(u,v)).r;
+                if(isSubrectangle){
+                    if (abs(pos.x)<L/2.0 && abs(pos.y)<W/2.0){
+    
+                        float u = (pos.x+L/2.0)/L;
+                        float v = (pos.y+W/2.0)/W;
+                        eta  = texture2D(initialSurface, vec2(u,v)).r;
+                    }
+                }
+                else{    
+                    eta  = texture2D(initialSurface, vUv).r;
                 }
 
                 float h = texture2D(bathymetry, vUv).r;
@@ -1894,10 +1900,14 @@ let Model = function(data, output){
         gl.uniform1f(initialProgram.uniforms.ymin, domain.ymin) ;
         gl.uniform1f(initialProgram.uniforms.ymax, domain.ymax) ;
 
-        gl.uniform1f(initialProgram.uniforms.L, initialSurface.L);
-        gl.uniform1f(initialProgram.uniforms.W, initialSurface.W);
-        gl.uniform1f(initialProgram.uniforms.ce, initialSurface.ce);
-        gl.uniform1f(initialProgram.uniforms.cn, initialSurface.cn);
+        gl.uniform1f(initialProgram.uniforms.isSubrectangle, initialSurface.isSubrectangle);
+
+        if(initialSurface.isSubrectangle){
+            gl.uniform1f(initialProgram.uniforms.L, initialSurface.L);
+            gl.uniform1f(initialProgram.uniforms.W, initialSurface.W);
+            gl.uniform1f(initialProgram.uniforms.ce, initialSurface.ce);
+            gl.uniform1f(initialProgram.uniforms.cn, initialSurface.cn);
+        }
         
         if(domain.coordinates == 'cartesian'){
             gl.uniform1i(initialProgram.uniforms.coordinates, 0);
@@ -2334,7 +2344,7 @@ let Model = function(data, output){
         else{
             /* If dt is not given use given or predefined cfl */ 
 
-            cfl = options.cfl === undefined ? 0.5 : options.cfl;
+            cfl = options.cfl === undefined ? 0.8 : options.cfl;
             if(domain.coordinates == 'cartesian'){
                 discretization.dt = cfl * Math.min(discretization.dx,discretization.dy)/Math.sqrt(hmax*9.81);
             }
@@ -2440,10 +2450,7 @@ let Model = function(data, output){
                 initialSurface = Object.assign(data.initialSurface, initialSurface);
                 if(data.initialSurface.cn === undefined || data.initialSurface.ce === undefined ||
                     data.initialSurface.L === undefined || data.initialSurface.W === undefined){
-                        initialSurface.ce = 0.5*(domain.xmin + domain.xmax);
-                        initialSurface.cn = 0.5*(domain.ymin + domain.ymax);
-                        initialSurface.L = domain.xmax - domain.xmin;
-                        initialSurface.W = domain.ymax - domain.ymin;
+                        initialSurface.isSubrectangle = false;
                 }
         }
         
