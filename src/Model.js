@@ -967,7 +967,7 @@ let Model = function(data, output){
                     eta = 0.0;
                     if (h_ij>gx){
                         float c = sqrt(g*h_ij);
-                        float z = sqrt(Nijm*Nijm+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
+                        float z = sqrt(Nijm*Nijm+0.25*(Mij+Mijm)*(Mij+Mijm))/c;
                         if (Nijm<0.0){
                             z = -z;
                         }
@@ -998,8 +998,7 @@ let Model = function(data, output){
                             if (Mimj<0.0){
                                 z = -z;
                             }
-                            eta = z;
-            
+                            eta = z;            
                         }
                         
                     }
@@ -1034,7 +1033,7 @@ let Model = function(data, output){
                     eta = 0.0;
                     if (h_ij>gx){
                         float c = sqrt(g*h_ij);
-                        float z = sqrt(Mij*Mij +Nij*Nij)/c;
+                        float z = sqrt(Mij*Mij +Nijm*Nijm)/c;
                         if (Nijm<0.0){
                             z = -z;
                         }
@@ -1232,7 +1231,7 @@ let Model = function(data, output){
                     float Mc = 0.25*(uij.g + uijp.g + uipj.g + uipjp.g);
                     float R5 = -2.0 * dt * omega * sin(degToRad(latj));
                     
-                    N2ij = N2ij + R5*Mc;              
+                    N2ij = N2ij + R5*Mc;                
                     
                     // dispersion correction
 
