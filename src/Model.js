@@ -1208,7 +1208,7 @@ let Model = function(data, output){
 
 
                 float M2ij = 0.0;
-                if(hiPlusHalfj > gx){
+                if(uij.a*uipj.a > gx*gx){
                     M2ij = uij.g - dt*g*hiPlusHalfj/(Rearth*coslatj*minToRad(dlon))*(eta2ipj - eta2ij);
 
                     // add coriollis
@@ -1224,7 +1224,7 @@ let Model = function(data, output){
                 }
 
                 float N2ij = 0.0;                
-                if(hijPlusHalf > gx){
+                if(uij.a*uijp.a > gx*gx){
                     N2ij = uij.b - dt*g*hijPlusHalf/(Rearth*minToRad(dlat))*(eta2ijp - eta2ij);
 
                     // add coriollis
@@ -1610,7 +1610,7 @@ let Model = function(data, output){
 
 
                 float M2ij = 0.0;
-                if(hiPlusHalfj > gx){
+                if(uij.a * uipj.a > gx*gx){
                     M2ij = uij.g - dt*g*hiPlusHalfj/(Rearth*coslatj*minToRad(dlon))*(eta2ipj - eta2ij);
 
                     // add coriolis
@@ -1628,7 +1628,7 @@ let Model = function(data, output){
                 }
 
                 float N2ij = 0.0;                
-                if(hijPlusHalf > gx){
+                if(uij.a * uijp.a > gx*gx){
                     N2ij = uij.b - dt*g*hijPlusHalf/(Rearth*minToRad(dlat))*(eta2ijp - eta2ij);            
 
                     // add coriolis
