@@ -1031,10 +1031,11 @@ let Model = function(data, output){
                 float coslatjp = cos(degToRad(latjp));
                 float coslatjm = cos(degToRad(latjm));
 
-                float eta2ij;
-            
-                eta2ij = uij.r - dt/(Rearth*coslatj*dlonrad)*(uij.g - uimj.g + uij.b*coslatjp - uijm.b*coslatjm); 
+                float eta2ij = 0.0;
 
+                if(uij.a>gx){
+                    eta2ij = uij.r - dt/(Rearth*coslatj*dlonrad)*(uij.g - uimj.g + uij.b*coslatjp - uijm.b*coslatjm); 
+                }
 
                 return eta2ij;
 
@@ -1046,13 +1047,13 @@ let Model = function(data, output){
 
                 float eta2ij = 0.0;
                 
-                if (isPeriodic == 0 && isBoundary){
+                if (isBoundary){
                     
                     eta2ij = openBoundary(UV, uij, uijm, uimj, uij.a);
 
 
                 }
-                else if (uij.a > gx) {
+                else{
 
                     eta2ij = updateInnerCellSurface(vUv, UV, uij, uimj, uijm);
 
