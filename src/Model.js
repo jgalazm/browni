@@ -935,8 +935,12 @@ let Model = function(data, output){
             }        
 
             float openBoundary(vec2 vUv, vec4 u_ij, vec4 u_ijm, vec4 u_imj, float h_ij){
-                float eta;
-            
+                float eta = 0.0;
+                if(h_ij<gx){
+                    return eta;
+                }
+                float c = sqrt(g*h_ij);
+
                 float etaij = u_ij.r;
                 float Mij = u_ij.g;
                 float Nij = u_ij.b;
@@ -952,106 +956,61 @@ let Model = function(data, output){
                 //j=0
                 float k = 1.0;
                 if (vUv.y <= k*texel.y){
-                    eta = 0.0;
-                    if (h_ij>gx){
-                        float c = sqrt(g*h_ij);
-                        float z = sqrt(Nij*Nij+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
-                        if (Nij>0.0){
-                            z = -z;
-                        }
-                        eta = z;
-            
-                    }		
+                    eta = sqrt(Nij*Nij+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
+                    if (Nij>0.0){
+                        eta = -eta;
+                    }            
                 }
             
                 if (vUv.y >= 1.0-k*texel.y){
-                    eta = 0.0;
-                    if (h_ij>gx){
-                        float c = sqrt(g*h_ij);
-                        float z = sqrt(Nijm*Nijm+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
-                        if (Nijm<0.0){
-                            z = -z;
-                        }
-                        eta = z;
+                    eta = sqrt(Nijm*Nijm+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
+                    if (Nijm<0.0){
+                        eta = -eta;
                     }
                 }
             
-                if(xmax-xmin<360.0-0.2){
+                if(isPeriodic==0){
                     if (vUv.x <= k*texel.x){
-                        eta = 0.0;
-                        if (h_ij>gx){
-                            float c = sqrt(g*h_ij);
-                            float z = sqrt(Mij*Mij+0.25*(Nij+Nijm)*(Nij+Nijm))/c;
-                            if (Mij>0.0){
-                                z = -z;
-                            }
-                            eta = z;
-            
+                        eta = sqrt(Mij*Mij+0.25*(Nij+Nijm)*(Nij+Nijm))/c;
+                        if (Mij>0.0){
+                            eta = -eta;
                         }
-                        
                     }
                     
                     if (vUv.x >=1.0-k*texel.x){
-                        eta = 0.0;
-                        if (h_ij>gx){
-                            float c = sqrt(g*h_ij);
-                            float z = sqrt(Mimj*Mimj+0.25*(Nij+Nijm)*(Nij+Nijm))/c;
-                            if (Mimj<0.0){
-                                z = -z;
-                            }
-                            eta = z;
-            
+                        eta = sqrt(Mimj*Mimj+0.25*(Nij+Nijm)*(Nij+Nijm))/c;
+                        if (Mimj<0.0){
+                            eta = -eta;
                         }
-                        
                     }
                 }
                 
             
                 if(vUv.x <= k*texel.x && vUv.y<=k*texel.y){
-                    eta = 0.0;
-                    if (h_ij>gx){
-                        float c = sqrt(g*h_ij);
-                        float z = sqrt(Mij*Mij +Nij*Nij)/c;
-                        if (Nij>0.0){
-                            z = -z;
-                        }
-                        eta = z;
+                    eta = sqrt(Mij*Mij +Nij*Nij)/c;
+                    if (Nij>0.0){
+                        eta = -eta;
                     }
                 }
             
                 if(vUv.x >= 1.0-k*texel.x && vUv.y<=k*texel.y){
-                    eta = 0.0;
-                    if (h_ij>gx){
-                        float c = sqrt(g*h_ij);
-                        float z = sqrt(Mimj*Mimj+Nij*Nij)/c;
-                        if (Nij>0.0){
-                            z = -z;
-                        }
-                        eta = z;
+                    eta = sqrt(Mimj*Mimj+Nij*Nij)/c;
+                    if (Nij>0.0){
+                        eta = -eta;
                     }
                 }
             
                 if(vUv.x <= k*texel.x && vUv.y>=1.0-k*texel.y){
-                    eta = 0.0;
-                    if (h_ij>gx){
-                        float c = sqrt(g*h_ij);
-                        float z = sqrt(Mij*Mij +Nij*Nij)/c;
-                        if (Nijm<0.0){
-                            z = -z;
-                        }
-                        eta = z;
+                    eta = sqrt(Mij*Mij +Nij*Nij)/c;
+                    if (Nijm<0.0){
+                        eta = -eta;
                     }
                 }
             
                 if(vUv.x >= 1.0 - k*texel.x && vUv.y>=1.0-k*texel.y){
-                    eta = 0.0;
-                    if (h_ij>gx){
-                        float c = sqrt(g*h_ij);
-                        float z = sqrt(Mimj*Mimj +Nijm*Nijm)/c;
-                        if (Nijm<0.0){
-                            z = -z;
-                        }
-                        eta = z;
+                    eta = sqrt(Mimj*Mimj +Nijm*Nijm)/c;
+                    if (Nijm<0.0){
+                        eta = -eta;
                     }
                 }
                 
