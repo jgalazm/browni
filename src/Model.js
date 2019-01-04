@@ -2205,6 +2205,8 @@ let Model = function(data, output){
             Initializes the list of pois in the model
         */
 
+       if(Object.keys(pois).length === 0) return;
+       
        let bathymetryTemp = exportBuffer(wave.first.fbo, 3, 0, 0, data.waveWidth, data.waveHeight);
        bathymetryTemp = [... bathymetryTemp];
 
