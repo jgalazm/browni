@@ -2329,7 +2329,7 @@ let Model = function(data, output){
         else{
             /* If dt is not given use given or predefined cfl */ 
 
-            cfl = options.cfl === undefined ? 0.8 : options.cfl;
+            cfl = options.cfl === undefined ? 0.5 : options.cfl;
             if(domain.coordinates == 'cartesian'){
                 discretization.dt = cfl * Math.min(discretization.dx,discretization.dy)/Math.sqrt(hmax*9.81);
             }
@@ -2355,8 +2355,8 @@ let Model = function(data, output){
 
         
 
-        if(discretization.dt>15)
-            discretization.dt = 15;
+        // if(discretization.dt>15)
+        //     discretization.dt = 15;
 
         // let hmax = Math.max.apply(null, )
         
