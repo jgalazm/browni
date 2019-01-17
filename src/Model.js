@@ -3,14 +3,16 @@ import {getLengthWidthSlip} from './Earthquake'
 let Model = function(data, output){
     let gl, isWebGL2;
     let vertexShader, initialShader, okadaShader, asteroidShader,
-        cartesianWaveShader, sphericalWaveShader, 
+        cartesianWaveShader,  
         cartesianDispersiveMassShader, cartesianDispersiveMomentumShader,
         dispersiveMassStepShader, dispersiveMomentumStepShader, 
+        sphericalMassStepShader, sphericalMomentumStepShader, 
         maxHeightsShader,displayShader;
     
     let initialProgram, okadaProgram, asteroidProgram,
-        cartesianWaveProgram, sphericalWaveProgram, 
+        cartesianWaveProgram, 
         cartesianDispersiveMassProgram, cartesianDispersiveMomentumProgram, 
+        sphericalMassStepProgram, sphericalMomentumStepProgram,
         dispersiveMassStepProgram, dispersiveMomentumStepProgram,
         maxHeightsProgram, displayProgram  ;
 
@@ -252,6 +254,7 @@ let Model = function(data, output){
             uniform float xmax;
             uniform float ymin;
             uniform float ymax;
+            uniform bool isSubrectangle;
 
             uniform int coordinates;
 
@@ -295,11 +298,16 @@ let Model = function(data, output){
                 }
 
                 float eta = 0.0;
-                if (abs(pos.x)<L/2.0 && abs(pos.y)<W/2.0){
-
-                    float u = (pos.x+L/2.0)/L;
-                    float v = (pos.y+W/2.0)/W;
-                    eta  = texture2D(initialSurface, vec2(u,v)).r;
+                if(isSubrectangle){
+                    if (abs(pos.x)<L/2.0 && abs(pos.y)<W/2.0){
+    
+                        float u = (pos.x+L/2.0)/L;
+                        float v = (pos.y+W/2.0)/W;
+                        eta  = texture2D(initialSurface, vec2(u,v)).r;
+                    }
+                }
+                else{    
+                    eta  = texture2D(initialSurface, vUv).r;
                 }
 
                 float h = texture2D(bathymetry, vUv).r;
@@ -628,7 +636,6 @@ let Model = function(data, output){
             }
         
         `);
-
         asteroidShader = compileShader(gl.FRAGMENT_SHADER,`
             precision highp float;
             varying vec2 vUv;
@@ -892,7 +899,7 @@ let Model = function(data, output){
             }   
         `);
 
-        sphericalWaveShader = compileShader(gl.FRAGMENT_SHADER,`
+        sphericalMassStepShader = compileShader(gl.FRAGMENT_SHADER,`
             precision highp float;
 
             varying vec2 vUv;
@@ -925,11 +932,15 @@ let Model = function(data, output){
             float minToRad(float minutes){
                 // convert from minutes to radians
                 return rad_min*minutes;
-            }
+            }        
 
             float openBoundary(vec2 vUv, vec4 u_ij, vec4 u_ijm, vec4 u_imj, float h_ij){
-                float eta;
-            
+                float eta = 0.0;
+                if(h_ij<gx){
+                    return eta;
+                }
+                float c = sqrt(g*h_ij);
+
                 float etaij = u_ij.r;
                 float Mij = u_ij.g;
                 float Nij = u_ij.b;
@@ -945,112 +956,67 @@ let Model = function(data, output){
                 //j=0
                 float k = 1.0;
                 if (vUv.y <= k*texel.y){
-                    eta = 0.0;
-                    if (h_ij>gx){
-                        float c = sqrt(g*h_ij);
-                        float z = sqrt(Nij*Nij+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
-                        if (Nij>0.0){
-                            z = -z;
-                        }
-                        eta = z;
-            
-                    }		
+                    eta = sqrt(Nij*Nij+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
+                    if (Nij>0.0){
+                        eta = -eta;
+                    }            
                 }
             
                 if (vUv.y >= 1.0-k*texel.y){
-                    eta = 0.0;
-                    if (h_ij>gx){
-                        float c = sqrt(g*h_ij);
-                        float z = sqrt(Nijm*Nijm+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
-                        if (Nijm<0.0){
-                            z = -z;
-                        }
-                        eta = z;
+                    eta = sqrt(Nijm*Nijm+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
+                    if (Nijm<0.0){
+                        eta = -eta;
                     }
                 }
             
-                if(xmax-xmin<360.0-0.2){
+                if(isPeriodic==0){
                     if (vUv.x <= k*texel.x){
-                        eta = 0.0;
-                        if (h_ij>gx){
-                            float c = sqrt(g*h_ij);
-                            float z = sqrt(Mij*Mij+0.25*(Nij+Nijm)*(Nij+Nijm))/c;
-                            if (Mij>0.0){
-                                z = -z;
-                            }
-                            eta = z;
-            
+                        eta = sqrt(Mij*Mij+0.25*(Nij+Nijm)*(Nij+Nijm))/c;
+                        if (Mij>0.0){
+                            eta = -eta;
                         }
-                        
                     }
                     
                     if (vUv.x >=1.0-k*texel.x){
-                        eta = 0.0;
-                        if (h_ij>gx){
-                            float c = sqrt(g*h_ij);
-                            float z = sqrt(Mimj*Mimj+0.25*(Nij+Nijm)*(Nij+Nijm))/c;
-                            if (Mimj<0.0){
-                                z = -z;
-                            }
-                            eta = z;
-            
+                        eta = sqrt(Mimj*Mimj+0.25*(Nij+Nijm)*(Nij+Nijm))/c;
+                        if (Mimj<0.0){
+                            eta = -eta;
                         }
-                        
                     }
                 }
                 
             
                 if(vUv.x <= k*texel.x && vUv.y<=k*texel.y){
-                    eta = 0.0;
-                    if (h_ij>gx){
-                        float c = sqrt(g*h_ij);
-                        float z = sqrt(Mij*Mij +Nij*Nij)/c;
-                        if (Nij>0.0){
-                            z = -z;
-                        }
-                        eta = z;
+                    eta = sqrt(Mij*Mij +Nij*Nij)/c;
+                    if (Nij>0.0){
+                        eta = -eta;
                     }
                 }
             
                 if(vUv.x >= 1.0-k*texel.x && vUv.y<=k*texel.y){
-                    eta = 0.0;
-                    if (h_ij>gx){
-                        float c = sqrt(g*h_ij);
-                        float z = sqrt(Mimj*Mimj+Nij*Nij)/c;
-                        if (Nij>0.0){
-                            z = -z;
-                        }
-                        eta = z;
+                    eta = sqrt(Mimj*Mimj+Nij*Nij)/c;
+                    if (Nij>0.0){
+                        eta = -eta;
                     }
                 }
             
                 if(vUv.x <= k*texel.x && vUv.y>=1.0-k*texel.y){
-                    eta = 0.0;
-                    if (h_ij>gx){
-                        float c = sqrt(g*h_ij);
-                        float z = sqrt(Mij*Mij +Nij*Nij)/c;
-                        if (Nijm<0.0){
-                            z = -z;
-                        }
-                        eta = z;
+                    eta = sqrt(Mij*Mij +Nij*Nij)/c;
+                    if (Nijm<0.0){
+                        eta = -eta;
                     }
                 }
             
                 if(vUv.x >= 1.0 - k*texel.x && vUv.y>=1.0-k*texel.y){
-                    eta = 0.0;
-                    if (h_ij>gx){
-                        float c = sqrt(g*h_ij);
-                        float z = sqrt(Mimj*Mimj +Nijm*Nijm)/c;
-                        if (Nijm<0.0){
-                            z = -z;
-                        }
-                        eta = z;
+                    eta = sqrt(Mimj*Mimj +Nijm*Nijm)/c;
+                    if (Nijm<0.0){
+                        eta = -eta;
                     }
                 }
                 
                 return eta;
-            }            
-
+            }
+            
             float updateInnerCellSurface(vec2 vUv, vec2 UV, vec4 uij, vec4 uimj, vec4 uijm){
                 /* apply mass conservation equation to update water surface */
 
@@ -1065,10 +1031,11 @@ let Model = function(data, output){
                 float coslatjp = cos(degToRad(latjp));
                 float coslatjm = cos(degToRad(latjm));
 
-                float eta2ij;
-            
-                eta2ij = uij.r - dt/(Rearth*coslatj*dlonrad)*(uij.g - uimj.g + uij.b*coslatjp - uijm.b*coslatjm); 
+                float eta2ij = 0.0;
 
+                if(uij.a>gx){
+                    eta2ij = uij.r - dt/(Rearth*coslatj*dlonrad)*(uij.g - uimj.g + uij.b*coslatjp - uijm.b*coslatjm); 
+                }
 
                 return eta2ij;
 
@@ -1080,13 +1047,13 @@ let Model = function(data, output){
 
                 float eta2ij = 0.0;
                 
-                if (isPeriodic == 0 && isBoundary){
+                if (isBoundary){
                     
                     eta2ij = openBoundary(UV, uij, uijm, uimj, uij.a);
 
 
                 }
-                else if (uij.a > gx) {
+                else{
 
                     eta2ij = updateInnerCellSurface(vUv, UV, uij, uimj, uijm);
 
@@ -1095,6 +1062,7 @@ let Model = function(data, output){
                 return eta2ij;
 
             }
+
             vec2 correctedUV(vec2 uv){
                 // corrected uv coordinates 
                 // so min(u) maps to U=0, and max(u) maps to U = 1
@@ -1109,7 +1077,93 @@ let Model = function(data, output){
                 return vec2(U,V);
             }
             
+            void main(){
+                // u = (eta, p, q, h)
+                // eta: free surface
+                // p: x-momentum
+                // q: y-momentum
+                // h: water depth, >0 if wet, <0 if dry.
+
+                // read previous frame, handling periodic boundaries
+                vec2 right = vec2(texel.x,0.0);
+                vec2 front = vec2(0.0, texel.y);
+
+                vec4 uij = texture2D(u0, vUv);
+                vec4 uijm = texture2D(u0, vUv - front);
+                vec4 uimj = texture2D(u0, vUv - right);
+                if(isPeriodic == 1){
+                    float uright = mod(vUv.x + right.x, 1.0);
+                    float uleft = mod(vUv.x - right.x, 1.0);
+                    
+                    uimj = texture2D(u0, vec2(uleft, vUv.y));
+                }
+       
+                float eta2ij = updateSurface(vUv, correctedUV(vUv), uij, uimj, uijm);
+
+
+                gl_FragColor = vec4(eta2ij, uij.g, uij.b, uij.a);
+            }
             
+        `);
+
+        sphericalMomentumStepShader = compileShader(gl.FRAGMENT_SHADER, `
+            precision highp float;
+
+            varying vec2 vUv;
+            uniform sampler2D u0; 
+            uniform vec2 texel; 
+
+            uniform float dlon;
+            uniform float dlat;
+            uniform float dt;
+            uniform float xmin; 
+            uniform float xmax;
+            uniform float ymin;
+            uniform float ymax;
+            uniform int isPeriodic;
+
+            const float rad_min = 0.000290888208665721; 
+            const float rad_deg = 0.01745329252;
+            const float cori_w = 7.2722e-5;
+            const float gx = 1e-5;
+            const float g = 9.81;
+            const float Rearth = 6378000.0;
+            const float omega = 7.29e-5;
+
+            float degToRad(float degrees){
+                // convert from degrees to radians
+                return rad_deg*degrees;
+            }
+
+            float minToRad(float minutes){
+                // convert from minutes to radians
+                return rad_min*minutes;
+            }
+            vec2 correctedUV(vec2 uv){
+                // corrected uv coordinates 
+                // so min(u) maps to U=0, and max(u) maps to U = 1
+                // same with v
+                // since normally, these are displace by half texel
+
+                float nx = 1.0/texel.x;
+                float ny = 1.0/texel.y;
+                float V = (uv.y-0.5*texel.y)/((ny-1.0)*texel.y);
+                float U = (uv.x-0.5*texel.x)/((nx-1.0)*texel.x);
+
+                return vec2(U,V);
+            }
+
+            vec4 queryPeriodicTexture(vec2 uv){
+                vec4 uij = texture2D(u0, uv);
+                if(isPeriodic == 1){
+                    float uright = mod(uv.x, 1.0);
+                    uij = texture2D(u0, vec2(uright, uv.y));
+                }
+
+                return uij;
+            }
+
+
             void main(){
                 // u = (eta, p, q, h)
                 // eta: free surface
@@ -1118,128 +1172,55 @@ let Model = function(data, output){
                 // h: water depth, >0 if wet, <0 if dry.
                 
 
-                // read previous frame, handling periodic boundaries
+                // read mass step, handling periodic boundaries
                 vec2 right = vec2(texel.x,0.0);
                 vec2 front = vec2(0.0, texel.y);
-                vec4 uij = texture2D(u0, vUv);                
+
+                vec4 uij = texture2D(u0, vUv);
+                vec4 uipj = queryPeriodicTexture( vUv + right );
+                vec4 uipjp = queryPeriodicTexture( vUv+right+front );
+
+                vec4 uijp = queryPeriodicTexture( vUv + front);
                 
-                vec4 uimj, uipj, uipjp,uimjp, uipjm;
-
-                if(isPeriodic == 1){
-                    float uright = mod(vUv.x + right.x, 1.0);
-                    float uleft = mod(vUv.x - right.x, 1.0);
-                    
-                    uimj = texture2D(u0, vec2(uleft, vUv.y));
-                    uipj = texture2D(u0, vec2(uright, vUv.y));
-                    uipjp = texture2D(u0, vec2(uright, vUv.y) + front);
-                    uimjp = texture2D(u0, vec2(uleft, vUv.y) + front);
-                    uipjm = texture2D(u0, vec2(uright, vUv.y) - front);
-                }
-                else{
-                    uimj = texture2D(u0, vUv - right);
-                    uipj = texture2D(u0, vUv + right);
-                    uipjp = texture2D(u0, vUv + right + front);
-                    uimjp = texture2D(u0, vUv - right + front);
-                    uipjm = texture2D(u0, vUv + right - front);
-
-                }
-                
-                vec4 uijp = texture2D(u0, vUv + front);
-                vec4 uijm = texture2D(u0, vUv - front);
-
-                // vec4 uimmj = texture2D(u0, vUv - 2.0*right);
-                // vec4 uimjm = texture2D(u0, vUv - right - front);
-                // vec4 uipjmm = texture2D(u0, vUv + right + 2.0*front);
-                // vec4 uijpp = texture2D(u0, vUv + 2.0 * front);
-                // vec4 uimjpp = texture2D(u0, vUv-right + 2.0 * front);
-                // vec4 uijmm = texture2D(u0, vUv - 2.0*front);
-                // vec4 uimmjp = texture2D(u0, vUv -2.0 * right + front);
-                
-                // mass conservation
-                float eta2ij = updateSurface(vUv, correctedUV(vUv), uij, uimj, uijm);
-
-                float eta2ipj = updateSurface(vUv+right, correctedUV(vUv+right), uipj, uij, uipjm);
-
-                float eta2ijp = updateSurface(vUv+front, correctedUV(vUv+front), uijp, uimjp, uij);
-
-                // necessary for dispersion:
-
-                // float eta2ippj = updateSurface(vUv+2.0*front, correctedUV(vUv+2.0*front), uipjp, uijp, uipj);
-                
-                // float eta2imj = updateSurface(vUv-front, correctedUV(vUv-front), uimj, uimmj, uimjm);
-
-                // float eta2ipjp = updateSurface(vUv+front+right, correctedUV(vUv+front+right), uipjp, uijp, uipj);
-
-                // float eta2ipjm = updateSurface(vUv+right-front, correctedUV(vUv+right-front), uipjm, uijm, uipjmm);
-
-                // float eta2ijpp = updateSurface(vUv+2.0*front, correctedUV(vUv+2.0*front), uijpp, uimjpp, uijp);
-
-                // float eta2ijm = updateSurface(vUv-front, correctedUV(vUv-front), uijm, uimjm, uijmm);
-
-                // float eta2imjp = updateSurface(vUv+front-right, correctedUV(vUv+front-right), uimjp, uimmjp, uimj);
-
-                // eta2ippj, eta2ipj, eta2ij, eta2imj, eta2ipjp, eta2ipj, eta2ipjm, eta2ijpp, eta2imjp
-
-                // momentum conservation 
-
                 float hiPlusHalfj = 0.5*(uij.a + uipj.a);
                 float hijPlusHalf = 0.5*(uij.a + uijp.a);
                 vec2 UV = correctedUV(vUv);
-                float U = UV.x;
-                float V  = UV.y;
-                float lon = U*(ymax-ymin)+ymin;
-                float latj = V*(ymax-ymin)+ymin;
+                float lon = UV.x*(ymax-ymin)+ymin;
+                float latj = UV.y*(ymax-ymin)+ymin;
                 float coslatj = cos(degToRad(latj));
                 
-                // dispersion parameters
-                float dx = Rearth*coslatj*minToRad(dlon);
-                float dy = Rearth*minToRad(dlat);
-                float alpha = (4.0*uij.a*uij.a + g * uij.a*dt*dt-dx*dx)/dx/dx;
-                float gamma = alpha + 1.0;
 
-
-
+                float eta2ij = uij.r;
+                float eta2ipj = uipj.r;
+                float eta2ijp = uijp.r;
 
 
                 float M2ij = 0.0;
-                if(hiPlusHalfj > gx){
+                if(uij.a * uipj.a > gx*gx){
                     M2ij = uij.g - dt*g*hiPlusHalfj/(Rearth*coslatj*minToRad(dlon))*(eta2ipj - eta2ij);
 
-                    // add coriollis
+                    // add coriolis
                     float Nc = 0.25*(uij.b + uijp.b + uipj.b + uipjp.b);
                     float R3 = 2.0 * dt * omega * sin(degToRad(latj+0.5*dlat/60.0));
                     
                     M2ij = M2ij + R3*Nc;
-                    
-                    // dispersion correction
-                    // M2ij = M2ij - alpha*dt/(12.0*dx)*g*hiPlusHalfj*(eta2ippj - 3.0*eta2ipj + 3.0*eta2ij - eta2imj);
-                    // M2ij = M2ij - gamma*dt/(12.0*dx)*g*hiPlusHalfj*(eta2ipjp -2.0*eta2ipj + eta2ipjm);
-                    // M2ij = M2ij + dt*(eta2ipj - 2.0*eta2ij + eta2imj);
                 }
 
                 float N2ij = 0.0;                
-                if(hijPlusHalf > gx){
-                    N2ij = uij.b - dt*g*hijPlusHalf/(Rearth*minToRad(dlat))*(eta2ijp - eta2ij);
+                if(uij.a * uijp.a > gx*gx){
+                    N2ij = uij.b - dt*g*hijPlusHalf/(Rearth*minToRad(dlat))*(eta2ijp - eta2ij);            
 
-                    // add coriollis
+                    // add coriolis
 
                     float Mc = 0.25*(uij.g + uijp.g + uipj.g + uipjp.g);
                     float R5 = -2.0 * dt * omega * sin(degToRad(latj));
                     
-                    N2ij = N2ij + R5*Mc;              
-                    
-                    // dispersion correction
-
-                    // N2ij = N2ij - alpha*dt/(12.0*dy)*g*hijPlusHalf*(eta2ijpp - 3.0*eta2ijp + 3.0*eta2ij - eta2ijm);
-                    // N2ij = N2ij - gamma*dt/(12.0*dy)*g*hijPlusHalf*(eta2ipjp - 2.0*eta2ijp + eta2imjp);
-                    // N2ij = N2ij + dt*(eta2ipj - 2.0*eta2ij + eta2imj);
+                    N2ij = N2ij + R5*Mc;                            
+                                        
                 }
 
-            
                 gl_FragColor = vec4( eta2ij, M2ij, N2ij, uij.a);
-
-            }
-
+            }        
         `);
 
         dispersiveMassStepShader = compileShader(gl.FRAGMENT_SHADER, `
@@ -1604,7 +1585,7 @@ let Model = function(data, output){
 
 
                 float M2ij = 0.0;
-                if(hiPlusHalfj > gx){
+                if(uij.a * uipj.a > gx*gx){
                     M2ij = uij.g - dt*g*hiPlusHalfj/(Rearth*coslatj*minToRad(dlon))*(eta2ipj - eta2ij);
 
                     // add coriolis
@@ -1622,7 +1603,7 @@ let Model = function(data, output){
                 }
 
                 float N2ij = 0.0;                
-                if(hijPlusHalf > gx){
+                if(uij.a * uijp.a > gx*gx){
                     N2ij = uij.b - dt*g*hijPlusHalf/(Rearth*minToRad(dlat))*(eta2ijp - eta2ij);            
 
                     // add coriolis
@@ -1740,9 +1721,10 @@ let Model = function(data, output){
         cartesianWaveProgram = shaderProgram(vertexShader, cartesianWaveShader);       
         cartesianDispersiveMassProgram = shaderProgram(vertexShader, cartesianDispersiveMassShader);       
         cartesianDispersiveMomentumProgram = shaderProgram(vertexShader, cartesianDispersiveMomentumShader);       
+   
+        sphericalMassStepProgram = shaderProgram(vertexShader, sphericalMassStepShader);
+        sphericalMomentumStepProgram = shaderProgram(vertexShader, sphericalMomentumStepShader);        
         
-        
-        sphericalWaveProgram = shaderProgram(vertexShader, sphericalWaveShader);
         dispersiveMassStepProgram = shaderProgram(vertexShader, dispersiveMassStepShader);
         dispersiveMomentumStepProgram = shaderProgram(vertexShader, dispersiveMomentumStepShader);
         
@@ -1879,7 +1861,28 @@ let Model = function(data, output){
         gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
     }
 
+    let readFBOPixels = function (frameBufferObject, left, top, width, height) {
 
+        var pixelData = new Float32Array(width * height * 4);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, frameBufferObject);
+        gl.readPixels(left, top, width, height, gl.RGBA, gl.FLOAT, pixelData);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        
+        return pixelData;
+    }
+
+    let exportBuffer = function(fbo, variableIndex=0, iStart=0, jStart = 0, 
+        Lx = discretization.numberOfCells[0], Ly = discretization.numberOfCells[1]){
+       let array = readFBOPixels(fbo, iStart, jStart, Lx, Ly);
+       array = array.filter((elem,index)=>{
+           return (index-variableIndex) % 4 == 0;
+       });
+       
+       return array;
+   }
+
+
+    /* Programs for initial condition */
     let renderInitialProgram = function(){
         
         gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
@@ -1894,10 +1897,14 @@ let Model = function(data, output){
         gl.uniform1f(initialProgram.uniforms.ymin, domain.ymin) ;
         gl.uniform1f(initialProgram.uniforms.ymax, domain.ymax) ;
 
-        gl.uniform1f(initialProgram.uniforms.L, initialSurface.L);
-        gl.uniform1f(initialProgram.uniforms.W, initialSurface.W);
-        gl.uniform1f(initialProgram.uniforms.ce, initialSurface.ce);
-        gl.uniform1f(initialProgram.uniforms.cn, initialSurface.cn);
+        gl.uniform1f(initialProgram.uniforms.isSubrectangle, initialSurface.isSubrectangle);
+
+        if(initialSurface.isSubrectangle){
+            gl.uniform1f(initialProgram.uniforms.L, initialSurface.L);
+            gl.uniform1f(initialProgram.uniforms.W, initialSurface.W);
+            gl.uniform1f(initialProgram.uniforms.ce, initialSurface.ce);
+            gl.uniform1f(initialProgram.uniforms.cn, initialSurface.cn);
+        }
         
         if(domain.coordinates == 'cartesian'){
             gl.uniform1i(initialProgram.uniforms.coordinates, 0);
@@ -2003,6 +2010,7 @@ let Model = function(data, output){
     }
 
 
+    /* Cartesian equations */
     let renderCartesianProgram = function(){
 
         gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
@@ -2019,6 +2027,8 @@ let Model = function(data, output){
 
     }
 
+
+    /* Cartesian dispersive equations */
     let renderCartesianDispersiveMassProgram = function(){
         gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
         
@@ -2054,28 +2064,57 @@ let Model = function(data, output){
         renderCartesianDispersiveMomentumProgram();
     };
 
-    let renderSphericalProgram = function(){        
-        gl.useProgram(sphericalWaveProgram.program);
+
+    /* Spherical equations */
+    let renderSphericalMassStepProgram = function(){
+        gl.useProgram(sphericalMassStepProgram.program);
         gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
 
 
-        gl.uniform1f(sphericalWaveProgram.uniforms.dlon, discretization.dlon);
-        gl.uniform1f(sphericalWaveProgram.uniforms.dlat, discretization.dlat);
-        gl.uniform1f(sphericalWaveProgram.uniforms.dt, discretization.dt);
-        gl.uniform1f(sphericalWaveProgram.uniforms.xmin, domain.xmin);
-        gl.uniform1f(sphericalWaveProgram.uniforms.xmax, domain.xmax);
-        gl.uniform1f(sphericalWaveProgram.uniforms.ymin, domain.ymin);
-        gl.uniform1f(sphericalWaveProgram.uniforms.ymax, domain.ymax);
+        gl.uniform1f(sphericalMassStepProgram.uniforms.dlon, discretization.dlon);
+        gl.uniform1f(sphericalMassStepProgram.uniforms.dlat, discretization.dlat);
+        gl.uniform1f(sphericalMassStepProgram.uniforms.dt, discretization.dt);
+        gl.uniform1f(sphericalMassStepProgram.uniforms.xmin, domain.xmin);
+        gl.uniform1f(sphericalMassStepProgram.uniforms.xmax, domain.xmax);
+        gl.uniform1f(sphericalMassStepProgram.uniforms.ymin, domain.ymin);
+        gl.uniform1f(sphericalMassStepProgram.uniforms.ymax, domain.ymax);
 
         
-        gl.uniform2f(sphericalWaveProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
-        gl.uniform1i(sphericalWaveProgram.uniforms.u0, wave.first.textureId);
-        gl.uniform1i(sphericalWaveProgram.uniforms.isPeriodic, domain.isPeriodic);
+        gl.uniform2f(sphericalMassStepProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
+        gl.uniform1i(sphericalMassStepProgram.uniforms.u0, wave.first.textureId);
+        gl.uniform1i(sphericalMassStepProgram.uniforms.isPeriodic, domain.isPeriodic);
         renderFrameBuffer(wave.second.fbo);
         wave.swap();
-
     }
 
+    let renderSphericalMomentumStepProgram = function(){
+        gl.useProgram(sphericalMomentumStepProgram.program);
+        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
+
+
+        gl.uniform1f(sphericalMomentumStepProgram.uniforms.dlon, discretization.dlon);
+        gl.uniform1f(sphericalMomentumStepProgram.uniforms.dlat, discretization.dlat);
+        gl.uniform1f(sphericalMomentumStepProgram.uniforms.dt, discretization.dt);
+        gl.uniform1f(sphericalMomentumStepProgram.uniforms.xmin, domain.xmin);
+        gl.uniform1f(sphericalMomentumStepProgram.uniforms.xmax, domain.xmax);
+        gl.uniform1f(sphericalMomentumStepProgram.uniforms.ymin, domain.ymin);
+        gl.uniform1f(sphericalMomentumStepProgram.uniforms.ymax, domain.ymax);
+
+        
+        gl.uniform2f(sphericalMomentumStepProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
+        gl.uniform1i(sphericalMomentumStepProgram.uniforms.u0, wave.first.textureId);
+        gl.uniform1i(sphericalMomentumStepProgram.uniforms.isPeriodic, domain.isPeriodic);
+        renderFrameBuffer(wave.second.fbo);
+        wave.swap();
+    }
+
+    let renderSphericalWaveEquation = function(){
+        renderSphericalMassStepProgram();
+        renderSphericalMomentumStepProgram();
+    }
+
+
+    /* Spherical dispersive equations */
     let renderDispersiveMassStepProgram = function(){
         gl.useProgram(dispersiveMassStepProgram.program);
         gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
@@ -2118,10 +2157,13 @@ let Model = function(data, output){
         wave.swap();
     }
 
-    let renderDispersiveWave = function(){
+    let renderDispersiveWaveEquation = function(){
         renderDispersiveMassStepProgram();
         renderDispersiveMomentumStepProgram();
     }
+
+
+    /* Additional programs that use the results of simulations */
 
     let renderMaxHeightsProgram = () => {
         gl.useProgram(maxHeightsProgram.program);
@@ -2156,51 +2198,15 @@ let Model = function(data, output){
 
     }
 
-    let initFBOs = function(){
-        const internalFormat = isWebGL2 ? gl.RGBA32F : gl.RGBA;
-        const format = gl.RGBA; 
-        const textype = gl.FLOAT;
-        let textureIdHeights1 = 2;
-        let textureIdHeights2 = 3;
-        let textureIdMaxHeights1 = 4;
-        let textureIdMaxHeights2 = 5;
-        let param = gl.NEAREST;
 
-        wave = createDoubleFBO(textureIdHeights1, textureIdHeights2, discretization.numberOfCells[0], discretization.numberOfCells[1], 
-            internalFormat, format, textype, param);
-        maxHeights = createDoubleFBO(textureIdMaxHeights1, textureIdMaxHeights2, discretization.numberOfCells[0], discretization.numberOfCells[1], 
-            internalFormat, format, textype, param);
-
-        if(initialSurface){
-            renderInitialProgram();
-        }
-        else if(earthquake.length>0){
-            renderEarthquake();
-        }
-        else if(asteroid){
-            renderAsteroidProgram();
-        }
-
-        renderMaxHeightsProgram();
-
-        renderDisplayProgram();
-    }
-
-    let readFBOPixels = function (frameBufferObject, left, top, width, height) {
-
-        var pixelData = new Float32Array(width * height * 4);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, frameBufferObject);
-        gl.readPixels(left, top, width, height, gl.RGBA, gl.FLOAT, pixelData);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        
-        return pixelData;
-    }
 
     let setPOIs = function(){
         /*
             Initializes the list of pois in the model
         */
 
+       if(Object.keys(pois).length === 0) return;
+       
        let bathymetryTemp = exportBuffer(wave.first.fbo, 3, 0, 0, data.waveWidth, data.waveHeight);
        bathymetryTemp = [... bathymetryTemp];
 
@@ -2276,17 +2282,6 @@ let Model = function(data, output){
         });
     }
 
-    let exportBuffer = function(fbo, variableIndex=0, iStart=0, jStart = 0, 
-         Lx = discretization.numberOfCells[0], Ly = discretization.numberOfCells[1]){
-        let array = readFBOPixels(fbo, iStart, jStart, Lx, Ly);
-        array = array.filter((elem,index)=>{
-            return (index-variableIndex) % 4 == 0;
-        });
-        
-        return array;
-    }
-    
-    let nextgrid = 0;
     let runSimulationStep = function(){
         discretization.stepNumber++;
         
@@ -2298,7 +2293,7 @@ let Model = function(data, output){
                 
             }
             else if(domain.coordinates == 'spherical'){
-                renderDispersiveWave();                    
+                renderDispersiveWaveEquation();                    
             }
         }
         else{
@@ -2308,7 +2303,7 @@ let Model = function(data, output){
                 
             }
             else if(domain.coordinates == 'spherical'){
-                renderSphericalProgram();                    
+                renderSphericalWaveEquation();                    
             }
         }
     
@@ -2360,8 +2355,8 @@ let Model = function(data, output){
 
         
 
-        if(discretization.dt>15)
-            discretization.dt = 15;
+        // if(discretization.dt>15)
+        //     discretization.dt = 15;
 
         // let hmax = Math.max.apply(null, )
         
@@ -2427,6 +2422,37 @@ let Model = function(data, output){
         }
 
     }
+
+    let initFBOs = function(){
+        const internalFormat = isWebGL2 ? gl.RGBA32F : gl.RGBA;
+        const format = gl.RGBA; 
+        const textype = gl.FLOAT;
+        let textureIdHeights1 = 2;
+        let textureIdHeights2 = 3;
+        let textureIdMaxHeights1 = 4;
+        let textureIdMaxHeights2 = 5;
+        let param = gl.NEAREST;
+
+        wave = createDoubleFBO(textureIdHeights1, textureIdHeights2, discretization.numberOfCells[0], discretization.numberOfCells[1], 
+            internalFormat, format, textype, param);
+        maxHeights = createDoubleFBO(textureIdMaxHeights1, textureIdMaxHeights2, discretization.numberOfCells[0], discretization.numberOfCells[1], 
+            internalFormat, format, textype, param);
+
+        if(initialSurface){
+            renderInitialProgram();
+        }
+        else if(earthquake.length>0){
+            renderEarthquake();
+        }
+        else if(asteroid){
+            renderAsteroidProgram();
+        }
+
+        renderMaxHeightsProgram();
+
+        renderDisplayProgram();
+    }
+    
     let start = function(){
 
         bathymetry.texture = createTextureFromMatrix (
@@ -2440,10 +2466,7 @@ let Model = function(data, output){
                 initialSurface = Object.assign(data.initialSurface, initialSurface);
                 if(data.initialSurface.cn === undefined || data.initialSurface.ce === undefined ||
                     data.initialSurface.L === undefined || data.initialSurface.W === undefined){
-                        initialSurface.ce = 0.5*(domain.xmin + domain.xmax);
-                        initialSurface.cn = 0.5*(domain.ymin + domain.ymax);
-                        initialSurface.L = domain.xmax - domain.xmin;
-                        initialSurface.W = domain.ymax - domain.ymin;
+                        initialSurface.isSubrectangle = false;
                 }
         }
         
@@ -2502,7 +2525,8 @@ let Model = function(data, output){
             colormap.rgba = [... newColors].reduce((a,b)=>{
                 return a.concat(b);
             });
-            gl.uniform4fv(displayProgram.uniforms.colormap, new Float32Array(colormap.rgba));   
+    let nextgrid = 0;
+    gl.uniform4fv(displayProgram.uniforms.colormap, new Float32Array(colormap.rgba));   
         },
         get colors(){
             return colormap.rgba;
