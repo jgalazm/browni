@@ -35,3 +35,4 @@ poi_*.lst
 *.msg
 bathymetry*.grd
 bathymetry*min
+.vscode/launch.json
