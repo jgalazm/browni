@@ -5,6 +5,3 @@
 "It renders Okada initial condition properly, according to validation cases described in the paper"
 
 "It renders asteroid initial condition properly"
-
-
-
