@@ -8,6 +8,10 @@ let Nami = function(data, output, lifeCycle){
 
     let init = () => {
         
+        if(lifeCycle.dataWasParsed){
+            lifeCycle.dataWasParsed(data);
+        }
+        
         this.model = new Model(data, output);
 
         if (lifeCycle.dataWasLoaded !== undefined){

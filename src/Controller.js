@@ -2,16 +2,16 @@ let Controller = function(model,data, lifeCycle){
     let thisController = {};
 
     
-    let controllerSimulationDidFinish, modelStepDidFinish, iterationDidFinish;
+    let simulationDidFinish, modelStepDidFinish, iterationDidFinish;
 
     let paused = false;
 
     if( typeof lifeCycle !== 'undefined'){
-        if( typeof lifeCycle.controllerSimulationDidFinish !== 'undefined'){
-            controllerSimulationDidFinish = lifeCycle.controllerSimulationDidFinish;
+        if( typeof lifeCycle.simulationDidFinish !== 'undefined'){
+            simulationDidFinish = lifeCycle.simulationDidFinish;
         }
         else{
-            controllerSimulationDidFinish = ()=>{};
+            simulationDidFinish = ()=>{};
         }
 
         if( typeof lifeCycle.modelStepDidFinish !== 'undefined'){
@@ -126,7 +126,7 @@ let Controller = function(model,data, lifeCycle){
         }
         else{
 
-            controllerSimulationDidFinish(model, thisController);
+            simulationDidFinish(model, thisController);
             
         }
     
