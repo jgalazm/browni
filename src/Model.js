@@ -2396,12 +2396,20 @@ let Model = function(data, output){
             for(let i = 0; i<earthquake.length; i++){
                 if(earthquake[i].lat !== undefined){
                     earthquake[i].cn = earthquake[i].lat;
-                }
+                };
                 if(earthquake[i].lon !== undefined){
                     earthquake[i].ce = earthquake[i].lon;
-                }
+                };
                 earthquake[i].U3 = 0.0;
-    
+                
+                if(earthquake[i].rake === undefined){
+                    earthquake[i].rake = 90.0;
+                };
+
+                if(earthquake[i].reference === undefined){
+                    earthquake[i].reference = 'center';
+                };
+
                 if( earthquake[i].Mw != undefined && 
                     !(earthquake[i].L != undefined && 
                         earthquake[i].W != undefined && 
@@ -2413,7 +2421,7 @@ let Model = function(data, output){
 
                     const slabInfo = getSlabParameters(earthquake[i].ce, earthquake[i].cn);
                     if(slabInfo){
-                        earthquake[i].depth = slabInfo.depth*1000;
+                        earthquake[i].depth = -slabInfo.depth*1000;
                         earthquake[i].dip = slabInfo.dip;
                         earthquake[i].strike = slabInfo.strike;
                     }

@@ -1,5 +1,6 @@
 <body>
   <script src="../../build/nami.js"></script>
+  <script src="../../assets/nami_slabs.js"></script>
   <script>
     const scenario = {
       xmin: -179.99166666666667,
@@ -12,16 +13,11 @@
       coordinates: 'spherical',
       bathymetry: [[1000, 1000], [1000, 1000]],
       earthquake: [{
-        depth: 22900,
-        strike: 17,
-        dip: 13.0,
-        rake: 108.0,
-        U3: 0.0,
-        cn: 0,   //centroid N coordinate, e
-        ce: 0,
+        cn: 45,   //centroid N coordinate, e
+        ce: -90,
         Mw: 9.0,
-        reference: 'mid bottom'
-      }]
+      }],
+      slab: slab
     };
 
     const output = {
@@ -33,12 +29,10 @@
     const lifeCycle = {
       dataWasLoaded: model => {
         document.body.appendChild(model.canvas);
-        debugger;
         console.log("data was loaded");
       },
       modelStepDidFinish: (model, controller) => {
-        if (model.discretization.stepNumber % 100 === 0) {
-          debugger;
+        if (model.discretization.stepNumber % 10 === 0) {
           return false;
         }
         return true;
@@ -47,6 +41,5 @@
     };
     const nami = new Nami(scenario, output, lifeCycle);
 
-    console.log(Nami);
   </script>
 </body>
