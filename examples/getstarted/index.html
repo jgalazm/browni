@@ -8,19 +8,17 @@
       ymin: -79.991666666666646,
       ymax: 79.841666666666654,
       isPeriodic: true,
-      waveWidth: parseInt(2159),
-      waveHeight: parseInt(960),
+      waveWidth: parseInt(2159/2),
+      waveHeight: parseInt(960/2),
       coordinates: 'spherical',
-      bathymetry: [[1000, 1000], [1000, 1000]],
-      // bathymetry: '../../assets/bathymetry.png',
-      // bathymetryMetadata: {
-      //   zmin: -6709,
-      //   zmax: 10684
-      // },
-      bathymetry: [[1000, 1000], [1000, 1000]],
+      bathymetry: '../../assets/bathymetry.png',
+      bathymetryMetadata: {
+        zmin: -6709,
+        zmax: 10684
+      },
       earthquake: [{
-        cn: -36.122,   //centroid N coordinate, e
-        ce: 165.898,
+        ce: -73.407,   //centroid N coordinate, e
+        cn: -38.143,
         Mw: 9.0,
       }],
       slab: slab
