@@ -1045,24 +1045,31 @@ let Model = function(data, output){
 
                 bool isBoundary = vUv.x < texel.x || vUv.x > 1.0 - texel.x || vUv.y < texel.y || vUv.y > 1.0 - texel.y;
 
-                float eta2ij = 0.0;
-                
-                if (isBoundary){
+               
+                if (isBoundary && isPeriodic == 0){
                     
-                    eta2ij = openBoundary(UV, uij, uijm, uimj, uij.a);
+                    return openBoundary(UV, uij, uijm, uimj, uij.a);
 
 
                 }
                 else{
 
-                    eta2ij = updateInnerCellSurface(vUv, UV, uij, uimj, uijm);
+                    return updateInnerCellSurface(vUv, UV, uij, uimj, uijm);
 
                 }               
 
-                return eta2ij;
+                return uij.r;
 
             }
+            vec4 queryPeriodicTexture( vec2 uv){
+                vec4 uij = texture2D(u0, uv);
+                if(isPeriodic == 1){
+                    float uright = mod(uv.x, 1.0);
+                    uij = texture2D(u0, vec2(uright, uv.y));
+                }
 
+                return uij;
+            }
             vec2 correctedUV(vec2 uv){
                 // corrected uv coordinates 
                 // so min(u) maps to U=0, and max(u) maps to U = 1
@@ -1090,18 +1097,13 @@ let Model = function(data, output){
 
                 vec4 uij = texture2D(u0, vUv);
                 vec4 uijm = texture2D(u0, vUv - front);
-                vec4 uimj = texture2D(u0, vUv - right);
-                if(isPeriodic == 1){
-                    float uright = mod(vUv.x + right.x, 1.0);
-                    float uleft = mod(vUv.x - right.x, 1.0);
-                    
-                    uimj = texture2D(u0, vec2(uleft, vUv.y));
-                }
-       
+                vec4 uimj = queryPeriodicTexture(vUv - right);
+
                 float eta2ij = updateSurface(vUv, correctedUV(vUv), uij, uimj, uijm);
 
 
                 gl_FragColor = vec4(eta2ij, uij.g, uij.b, uij.a);
+                // gl_FragColor = uimj;
             }
             
         `);
