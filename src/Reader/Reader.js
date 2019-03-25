@@ -1,60 +1,46 @@
 import {getArrayFromImage} from './FileUtils';
 
 const Reader = function(data, init){
-    let bathymetryReady = false;
-    let initialSurfaceReady = false;
 
-    let loadBathymetry = function(){
+    let loadBathymetry = function(resolve){
 
         if(typeof data.bathymetry == 'object'){
             // assume bathymetry is an array
             data.bathymetry = {
                 array: data.bathymetry
             };
-            bathymetryReady = true;
-
-            if(initialSurfaceReady){
-                init();
-            }
+            resolve(data.bathymetry);
         }
         else if(data.bathymetry.slice(-3)==='png' || data.bathymetry.slice(-3)==='jpg'){
             if(!data.bathymetryMetadata){
                 throw new Error('Must define data.bathymetryMetadata when using image format bathymetry');
             }
             let bathymetryImage = new Image();
-            bathymetryImage.onload = function(){
+            bathymetryImage.onload = () =>{
 
                 data.bathymetry = {
                     array : getArrayFromImage(bathymetryImage, data.bathymetryMetadata)
                 }
 
-                bathymetryReady = true;
-                
-                if(initialSurfaceReady){
-                    init();
-                }
+                resolve(data.bathymetry.array);
             }
             bathymetryImage.src = data.bathymetry;
 
         }
         else{
-            getArrayFromFile(data.bathymetry,function(array){
+            getArrayFromFile(data.bathymetry, (array) =>{
                 
                 data.bathymetry = {
                     array : array 
                 }   
         
-                bathymetryReady = true;
-                
-                if(initialSurfaceReady){
-                    init();
-                }
+                resolve(data.bathymetry.array);
                 
             }, data.binaryBathymetry ? 'binary':'ascii');
         }
     }
 
-    let loadInitialCondition = function(){
+    let loadInitialCondition = function(resolve){
         /* Detects if initialSurface, earthquake or asteroid is provided, assuming
         the user knows the right format.
         Otherwise throws an error */
@@ -66,10 +52,8 @@ const Reader = function(data, init){
                 data.initialSurface.array = array;
         
                 initialSurfaceReady = true;
-        
-                if(bathymetryReady){           
-                    init();
-                }
+                
+                resolve(data.initialSurface.array);
                 
             },'ascii');
         }
@@ -102,17 +86,12 @@ const Reader = function(data, init){
 
                     data.earthquake = earthquake;
 
-                    initialSurfaceReady = true;
-
-                    if(bathymetryReady){
-                        init();
-                    }
-
+                    resolve(earthquake);
                 });
             }
             else{
                 
-                initialSurfaceReady = true;
+                resolve(data.earthquake);
             }
 
             if(bathymetryReady && initialSurfaceReady){
@@ -120,7 +99,6 @@ const Reader = function(data, init){
             }
         }
         else if(data.asteroid !== undefined){
-            initialSurfaceReady = true;
             if(bathymetryReady){
                 init();
             }
@@ -130,13 +108,20 @@ const Reader = function(data, init){
         }
     }
 
-    loadBathymetry();
-    loadInitialCondition();    
+  
+        
 
-    return {
-        loadBathymetry,
-        loadInitialCondition
-    }
+    let newData = {};
+
+    newData.bathymetry = new Promise( (resolve, reject) =>{
+        loadBathymetry(resolve);
+    });
+
+    newData.initialCondition = new Promise( (resolve, reject) => {
+        loadInitialCondition(resolve);
+    });
+    
+    return newData;
 }
 
 export default Reader;

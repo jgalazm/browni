@@ -24,7 +24,18 @@ let Nami = function(data, output, lifeCycle){
         
     }
 
-    const reader = new Reader(data, init);
+    const newData = new Reader(data);
+    Promise.all([newData.bathymetry, newData.initialCondition]).then( values=>{
+
+        const [bathyArray, earthquake] = values;
+
+        data.bathymetry = {
+            array : bathyArray 
+        }
+
+        data.earthquake = earthquake;
+        init();
+    })
 
     
 
