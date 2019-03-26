@@ -1,228 +1,135 @@
-import {getLengthWidthSlip} from './Earthquake'
+import { getLengthWidthSlip } from "./Earthquake";
 
-let Model = function(data, output){
-    let gl, isWebGL2;
-    let vertexShader, initialShader, okadaShader, asteroidShader,
-        cartesianWaveShader,  
-        cartesianDispersiveMassShader, cartesianDispersiveMomentumShader,
-        dispersiveMassStepShader, dispersiveMomentumStepShader, 
-        sphericalMassStepShader, sphericalMomentumStepShader, 
-        maxHeightsShader,displayShader;
-    
-    let initialProgram, okadaProgram, asteroidProgram,
-        cartesianWaveProgram, 
-        cartesianDispersiveMassProgram, cartesianDispersiveMomentumProgram, 
-        sphericalMassStepProgram, sphericalMomentumStepProgram,
-        dispersiveMassStepProgram, dispersiveMomentumStepProgram,
-        maxHeightsProgram, displayProgram  ;
+let Model = function(data, output) {
+  let gl, isWebGL2;
+  let vertexShader,
+    initialShader,
+    okadaShader,
+    asteroidShader,
+    cartesianWaveShader,
+    cartesianDispersiveMassShader,
+    cartesianDispersiveMomentumShader,
+    dispersiveMassStepShader,
+    dispersiveMomentumStepShader,
+    sphericalMassStepShader,
+    sphericalMomentumStepShader,
+    maxHeightsShader,
+    displayShader;
 
-    let domain, bathymetry, discretization, initialSurface, earthquake, asteroid;
-    let wave, maxHeights, pcolorDisplay;
-    let displayOption, pois, colormap;
-    let slab;
+  let initialProgram,
+    okadaProgram,
+    asteroidProgram,
+    cartesianWaveProgram,
+    cartesianDispersiveMassProgram,
+    cartesianDispersiveMomentumProgram,
+    sphericalMassStepProgram,
+    sphericalMomentumStepProgram,
+    dispersiveMassStepProgram,
+    dispersiveMomentumStepProgram,
+    maxHeightsProgram,
+    displayProgram;
 
-   
-    // domain
-    domain = {
-        equations: data.equations,
-        coordinates : data.coordinates,
-        xmin : data.xmin,
-        xmax : data.xmax,
-        ymin : data.ymin,
-        ymax : data.ymax,
-      isPeriodic: data.isPeriodic !== undefined ? data.isPeriodic: 0
-    };
-    
-    // bathymetry
-    bathymetry = {
-        array: data.bathymetry.array,
-        image: data.bathymetry.image,
-        textureId: 0,
-        texture: undefined, // to be loaded at start()
-    };
+  let wave, maxHeights;
+  let {
+    domain,
+    bathymetry,
+    discretization,
+    initialSurface,
+    earthquake,
+    asteroid,
+    slab,
+    pcolorDisplay,
+    displayOption,
+    pois,
+    colormap
+  } = data;
 
-    // discretization
-    discretization = {
-        numberOfCells : [data.waveWidth, data.waveHeight],
-        dt: undefined,
-        stepNumber : 0
-    };
-
-    if(domain.coordinates == 'cartesian'){
-        discretization.dx = (domain.xmax-domain.xmin)/(discretization.numberOfCells[0]-1)
-        discretization.dy = (domain.ymax-domain.ymin)/(discretization.numberOfCells[1]-1);
-    }
-    else if(domain.coordinates == 'spherical'){
-        domain.xmin = domain.xmin;
-        domain.xmax = domain.xmax;
-        discretization.dlon = 60*(domain.xmax-domain.xmin)/(discretization.numberOfCells[0]-1);
-        discretization.dlat = 60*(domain.ymax-domain.ymin)/(discretization.numberOfCells[1]-1);
-    }
-
-    if(domain.equations === undefined){
-        domain.equations = 'linear';
-    }
-
-    // Initial condition
-    earthquake = [];
-    if(data.initialSurface){
-        initialSurface = {
-            array: data.initialSurface.array,
-            textureId : 1,
-            texture : undefined
-        };
-    }
-    else if(data.earthquake){
-        earthquake = data.earthquake;
-    }
-    else if(data.asteroid){
-        asteroid = Object.assign({}, data.asteroid);
-    }
-            
-
-    pcolorDisplay = {
-        width : output.displayWidth,
-        height : output.displayHeight
-    };
-    
-    displayOption = output.displayOption ? output.displayOption : 'heights';
-
-    pois = output.pois ? output.pois : {};
-
-    const cmax = 0.1;
-    const cmin = -0.1;
-    let defaultColormap = {    
-        thresholds: [0.0*(cmax-cmin) + cmin, 
-                    0.06666666666666667*(cmax-cmin) + cmin, 
-                    0.13333333333333333*(cmax-cmin) + cmin, 
-                    0.2*(cmax-cmin) + cmin, 
-                    0.26666666666666666*(cmax-cmin) + cmin, 
-                    0.3333333333333333*(cmax-cmin) + cmin, 
-                    0.4*(cmax-cmin) + cmin, 
-                    0.49*(cmax-cmin) + cmin, 
-                    0.5*(cmax-cmin) + cmin, 
-                    0.51*(cmax-cmin) + cmin, 
-                    0.6666666666666666*(cmax-cmin) + cmin, 
-                    0.7333333333333333*(cmax-cmin) + cmin, 
-                    0.8*(cmax-cmin) + cmin, 
-                    0.8666666666666667*(cmax-cmin) + cmin, 
-                    0.9333333333333333*(cmax-cmin) + cmin,
-                    1.0*(cmax - cmin) + cmin],
-        
-        rgba: [[ 0.001462,0.000466,0.013866,1],
-             [ 0.046915,0.030324,0.150164,0.8 ],
-             [ 0.142378,0.046242,0.308553,0.8 ],
-             [ 0.258234,0.038571,0.406485,0.8 ],
-             [ 0.366529,0.071579,0.431994,0.8 ],
-             [ 0.472328,0.110547,0.428334, 0.9 ],
-             [ 0.578304,0.148039,0.404411, 0.8 ],
-             [ 0.682656,0.189501,0.360757, 0.4 ],
-             [ 0.780517,0.243327,0.299523, 0 ],
-             [ 0.865006,0.316822,0.226055, 0.4 ],
-             [ 0.929644,0.411479,0.145367, 0.8 ],
-             [ 0.970919,0.522853,0.058367, 0.9 ],
-             [ 0.987622,0.64532,0.039886,0.8 ],
-             [ 0.978806,0.774545,0.176037,0.8 ],
-             [ 0.950018,0.903409,0.380271,0.8 ],
-             [ 0.988362,0.998364,0.644924,1 ]]
-    }
-
-    colormap = output.colormap !== undefined ? output.colormap : defaultColormap;    
-    
-    // flatten the array
-    colormap.rgba = colormap.rgba.reduce((a,b)=>{
-        return a.concat(b);
-    });
-
-    /* misc data */
-
-    slab = data.slab;
-
-    /* 
+  /* 
         Start WebGL context
 
     */
 
-    let canvas;    
-    if(data.canvas != undefined){
-      canvas = data.canvas;
-    }
-    else{
-      canvas = document.createElement("canvas");   
-    }
-    canvas.width = pcolorDisplay.width;
-    canvas.height = pcolorDisplay.height;
+  let canvas;
+  if (data.canvas != undefined) {
+    canvas = data.canvas;
+  } else {
+    canvas = document.createElement("canvas");
+  }
+  canvas.width = pcolorDisplay.width;
+  canvas.height = pcolorDisplay.height;
 
-    try
-    {
-        gl = canvas.getContext("webgl2", { premultipliedAlpha: false });
-        isWebGL2 = !!gl;
-        if (!isWebGL2) {
-            gl = canvas.getContext('webgl', { premultipliedAlpha: false }) || canvas.getContext('experimental-webgl', { premultipliedAlpha: false });
-        }
-        gl.viewportWidth = canvas.width;
-        gl.viewportHeight = canvas.height;
-    } catch (e) {
+  try {
+    gl = canvas.getContext("webgl2", { premultipliedAlpha: false });
+    isWebGL2 = !!gl;
+    if (!isWebGL2) {
+      gl =
+        canvas.getContext("webgl", { premultipliedAlpha: false }) ||
+        canvas.getContext("experimental-webgl", { premultipliedAlpha: false });
     }
-    if (!gl) {
-        alert("Could not initialise Webgl.");
-    }
+    gl.viewportWidth = canvas.width;
+    gl.viewportHeight = canvas.height;
+  } catch (e) {}
+  if (!gl) {
+    alert("Could not initialise Webgl.");
+  }
 
-    gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.DEPTH_TEST);
 
-    gl.clearColor(0.0,0.0,0.0,1.0); //default color for any fbo, canvas included
+  gl.clearColor(0.0, 0.0, 0.0, 1.0); //default color for any fbo, canvas included
 
-    /*
+  /*
         WebGL tools
 
     */
 
-    let compileShader = function(type, source){
-        let shader = gl.createShader(type); //shader handle
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
+  let compileShader = function(type, source) {
+    let shader = gl.createShader(type); //shader handle
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
 
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            console.warn(source);
-            throw gl.getShaderInfoLog(shader);
-        }
-        
-        return shader;
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.warn(source);
+      throw gl.getShaderInfoLog(shader);
     }
 
-    let shaderProgram = function(vertexShader, fragmentShader){
-        
-        let uniforms = {}; // to store uniforms handles
-        let program = gl.createProgram(); //program handle
+    return shader;
+  };
 
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
-        gl.linkProgram(program);
-        
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            throw gl.getProgramInfoLog(program);
-        }
+  let shaderProgram = function(vertexShader, fragmentShader) {
+    let uniforms = {}; // to store uniforms handles
+    let program = gl.createProgram(); //program handle
 
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
 
-        let uniformsCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-
-        for(let i = 0; i< uniformsCount; i++){
-            let uniformName = gl.getActiveUniform(program, i).name;
-            if(uniformName.includes('[0]')) uniformName = uniformName.replace('[0]','');
-            uniforms[uniformName] = gl.getUniformLocation(program, uniformName);
-        }
-        
-        uniforms.vertexPositionAttribute = gl.getAttribLocation(program, "inPosition");
-            
-        
-        gl.enableVertexAttribArray(uniforms.vertexPositionAttribute);
-        
-        return {uniforms,program};
-
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      throw gl.getProgramInfoLog(program);
     }
 
-    let createShaders = function(){
-        vertexShader = compileShader(gl.VERTEX_SHADER,`
+    let uniformsCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+
+    for (let i = 0; i < uniformsCount; i++) {
+      let uniformName = gl.getActiveUniform(program, i).name;
+      if (uniformName.includes("[0]"))
+        uniformName = uniformName.replace("[0]", "");
+      uniforms[uniformName] = gl.getUniformLocation(program, uniformName);
+    }
+
+    uniforms.vertexPositionAttribute = gl.getAttribLocation(
+      program,
+      "inPosition"
+    );
+
+    gl.enableVertexAttribArray(uniforms.vertexPositionAttribute);
+
+    return { uniforms, program };
+  };
+
+  let createShaders = function() {
+    vertexShader = compileShader(
+      gl.VERTEX_SHADER,
+      `
             precision highp  float;
             attribute vec2 inPosition;
 
@@ -234,9 +141,12 @@ let Model = function(data, output){
                 
                 gl_Position = vec4(inPosition,0, 1);
             }    
-        `);
+        `
+    );
 
-        initialShader = compileShader(gl.FRAGMENT_SHADER,`
+    initialShader = compileShader(
+      gl.FRAGMENT_SHADER,
+      `
             precision highp float;
             
             varying vec2 vUv;
@@ -315,9 +225,12 @@ let Model = function(data, output){
 
                 gl_FragColor  = vec4(eta, 0.0, 0.0, h);
             }    
-        `);
-        
-        okadaShader = compileShader(gl.FRAGMENT_SHADER,`
+        `
+    );
+
+    okadaShader = compileShader(
+      gl.FRAGMENT_SHADER,
+      `
             precision highp float;
             varying vec2 vUv;
             uniform sampler2D bathymetry;
@@ -635,8 +548,11 @@ let Model = function(data, output){
 
             }
         
-        `);
-        asteroidShader = compileShader(gl.FRAGMENT_SHADER,`
+        `
+    );
+    asteroidShader = compileShader(
+      gl.FRAGMENT_SHADER,
+      `
             precision highp float;
             varying vec2 vUv;
             uniform sampler2D bathymetry;
@@ -711,8 +627,11 @@ let Model = function(data, output){
                 gl_FragColor = vec4(height, 0.0, 0.0, bathymetry);
             }
 
-        `);
-        cartesianWaveShader = compileShader(gl.FRAGMENT_SHADER,`
+        `
+    );
+    cartesianWaveShader = compileShader(
+      gl.FRAGMENT_SHADER,
+      `
             precision highp float;
             
             uniform sampler2D u0;
@@ -779,10 +698,12 @@ let Model = function(data, output){
                 
                 gl_FragColor  = u2ij;
             }    
-        `);
+        `
+    );
 
-        cartesianDispersiveMassShader = compileShader(gl.FRAGMENT_SHADER,
-            `
+    cartesianDispersiveMassShader = compileShader(
+      gl.FRAGMENT_SHADER,
+      `
                 precision highp float;
                 
                 varying vec2 vUv;
@@ -817,9 +738,11 @@ let Model = function(data, output){
 
                 }
             `
-        );
+    );
 
-        cartesianDispersiveMomentumShader = compileShader(gl.FRAGMENT_SHADER,`
+    cartesianDispersiveMomentumShader = compileShader(
+      gl.FRAGMENT_SHADER,
+      `
             precision highp float;
                 
             varying vec2 vUv;
@@ -897,9 +820,12 @@ let Model = function(data, output){
                 
                 gl_FragColor  = vec4(eta2ij, M2ij, N2ij, hij);
             }   
-        `);
+        `
+    );
 
-        sphericalMassStepShader = compileShader(gl.FRAGMENT_SHADER,`
+    sphericalMassStepShader = compileShader(
+      gl.FRAGMENT_SHADER,
+      `
             precision highp float;
 
             varying vec2 vUv;
@@ -1045,24 +971,31 @@ let Model = function(data, output){
 
                 bool isBoundary = vUv.x < texel.x || vUv.x > 1.0 - texel.x || vUv.y < texel.y || vUv.y > 1.0 - texel.y;
 
-                float eta2ij = 0.0;
-                
-                if (isBoundary){
+               
+                if (isBoundary && isPeriodic == 0){
                     
-                    eta2ij = openBoundary(UV, uij, uijm, uimj, uij.a);
+                    return openBoundary(UV, uij, uijm, uimj, uij.a);
 
 
                 }
                 else{
 
-                    eta2ij = updateInnerCellSurface(vUv, UV, uij, uimj, uijm);
+                    return updateInnerCellSurface(vUv, UV, uij, uimj, uijm);
 
                 }               
 
-                return eta2ij;
+                return uij.r;
 
             }
+            vec4 queryPeriodicTexture( vec2 uv){
+                vec4 uij = texture2D(u0, uv);
+                if(isPeriodic == 1){
+                    float uright = mod(uv.x, 1.0);
+                    uij = texture2D(u0, vec2(uright, uv.y));
+                }
 
+                return uij;
+            }
             vec2 correctedUV(vec2 uv){
                 // corrected uv coordinates 
                 // so min(u) maps to U=0, and max(u) maps to U = 1
@@ -1090,23 +1023,21 @@ let Model = function(data, output){
 
                 vec4 uij = texture2D(u0, vUv);
                 vec4 uijm = texture2D(u0, vUv - front);
-                vec4 uimj = texture2D(u0, vUv - right);
-                if(isPeriodic == 1){
-                    float uright = mod(vUv.x + right.x, 1.0);
-                    float uleft = mod(vUv.x - right.x, 1.0);
-                    
-                    uimj = texture2D(u0, vec2(uleft, vUv.y));
-                }
-       
+                vec4 uimj = queryPeriodicTexture(vUv - right);
+
                 float eta2ij = updateSurface(vUv, correctedUV(vUv), uij, uimj, uijm);
 
 
                 gl_FragColor = vec4(eta2ij, uij.g, uij.b, uij.a);
+                // gl_FragColor = uimj;
             }
             
-        `);
+        `
+    );
 
-        sphericalMomentumStepShader = compileShader(gl.FRAGMENT_SHADER, `
+    sphericalMomentumStepShader = compileShader(
+      gl.FRAGMENT_SHADER,
+      `
             precision highp float;
 
             varying vec2 vUv;
@@ -1221,9 +1152,12 @@ let Model = function(data, output){
 
                 gl_FragColor = vec4( eta2ij, M2ij, N2ij, uij.a);
             }        
-        `);
+        `
+    );
 
-        dispersiveMassStepShader = compileShader(gl.FRAGMENT_SHADER, `
+    dispersiveMassStepShader = compileShader(
+      gl.FRAGMENT_SHADER,
+      `
             precision highp float;
 
             varying vec2 vUv;
@@ -1469,9 +1403,12 @@ let Model = function(data, output){
 
                 gl_FragColor = vec4(eta2ij, uij.g, uij.b, uij.a);
             }
-        `);
+        `
+    );
 
-        dispersiveMomentumStepShader = compileShader(gl.FRAGMENT_SHADER, `
+    dispersiveMomentumStepShader = compileShader(
+      gl.FRAGMENT_SHADER,
+      `
             precision highp float;
 
             varying vec2 vUv;
@@ -1623,9 +1560,12 @@ let Model = function(data, output){
 
                 gl_FragColor = vec4( eta2ij, M2ij, N2ij, uij.a);
             }
-        `);
+        `
+    );
 
-        maxHeightsShader = compileShader(gl.FRAGMENT_SHADER,`
+    maxHeightsShader = compileShader(
+      gl.FRAGMENT_SHADER,
+      `
             precision highp float;
 
             uniform sampler2D maxHeights;
@@ -1653,9 +1593,12 @@ let Model = function(data, output){
                 gl_FragColor = vec4( maxHeight, arrivalTime, 0.0, 1.0);
 
             }
-        `);
-        
-        displayShader = compileShader(gl.FRAGMENT_SHADER,`
+        `
+    );
+
+    displayShader = compileShader(
+      gl.FRAGMENT_SHADER,
+      `
             precision highp float;
             
             const int nColors = 16;            
@@ -1712,88 +1655,153 @@ let Model = function(data, output){
 
                 gl_FragColor  = color;
             }    
-        `);       
+        `
+    );
 
-        initialProgram = shaderProgram(vertexShader, initialShader);
-        okadaProgram = shaderProgram(vertexShader, okadaShader);
-        asteroidProgram = shaderProgram(vertexShader, asteroidShader);
+    initialProgram = shaderProgram(vertexShader, initialShader);
+    okadaProgram = shaderProgram(vertexShader, okadaShader);
+    asteroidProgram = shaderProgram(vertexShader, asteroidShader);
 
-        cartesianWaveProgram = shaderProgram(vertexShader, cartesianWaveShader);       
-        cartesianDispersiveMassProgram = shaderProgram(vertexShader, cartesianDispersiveMassShader);       
-        cartesianDispersiveMomentumProgram = shaderProgram(vertexShader, cartesianDispersiveMomentumShader);       
-   
-        sphericalMassStepProgram = shaderProgram(vertexShader, sphericalMassStepShader);
-        sphericalMomentumStepProgram = shaderProgram(vertexShader, sphericalMomentumStepShader);        
-        
-        dispersiveMassStepProgram = shaderProgram(vertexShader, dispersiveMassStepShader);
-        dispersiveMomentumStepProgram = shaderProgram(vertexShader, dispersiveMomentumStepShader);
-        
-        maxHeightsProgram = shaderProgram(vertexShader, maxHeightsShader);
-        displayProgram = shaderProgram(vertexShader, displayShader);
+    cartesianWaveProgram = shaderProgram(vertexShader, cartesianWaveShader);
+    cartesianDispersiveMassProgram = shaderProgram(
+      vertexShader,
+      cartesianDispersiveMassShader
+    );
+    cartesianDispersiveMomentumProgram = shaderProgram(
+      vertexShader,
+      cartesianDispersiveMomentumShader
+    );
+
+    sphericalMassStepProgram = shaderProgram(
+      vertexShader,
+      sphericalMassStepShader
+    );
+    sphericalMomentumStepProgram = shaderProgram(
+      vertexShader,
+      sphericalMomentumStepShader
+    );
+
+    dispersiveMassStepProgram = shaderProgram(
+      vertexShader,
+      dispersiveMassStepShader
+    );
+    dispersiveMomentumStepProgram = shaderProgram(
+      vertexShader,
+      dispersiveMomentumStepShader
+    );
+
+    maxHeightsProgram = shaderProgram(vertexShader, maxHeightsShader);
+    displayProgram = shaderProgram(vertexShader, displayShader);
+  };
+
+  let createBuffers = function() {
+    let vertexPositionBufferHandle = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBufferHandle);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]),
+      gl.STATIC_DRAW
+    );
+
+    let facesBufferHandle = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, facesBufferHandle);
+    gl.bufferData(
+      gl.ELEMENT_ARRAY_BUFFER,
+      new Uint16Array([0, 1, 2, 0, 2, 3]),
+      gl.STATIC_DRAW
+    );
+
+    gl.vertexAttribPointer(
+      cartesianWaveProgram.uniforms.vertexPositionAttribute,
+      2,
+      gl.FLOAT,
+      false,
+      0,
+      0
+    );
+  };
+
+  let createTextureFromData = function(
+    width,
+    height,
+    data,
+    textureId,
+    internalFormat,
+    format,
+    type
+  ) {
+    // creates a texture from an array "data" of size "width"*height"*4 with the given webgl formats and id
+
+    if (
+      !gl.getExtension("OES_texture_float") &&
+      !gl.getExtension("EXT_color_buffer_float")
+    ) {
+      throw "Requires OES_texture_float extension";
     }
 
-    let createBuffers = function(){ 
-        let vertexPositionBufferHandle = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBufferHandle);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), gl.STATIC_DRAW);
+    var texture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0 + textureId);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
 
-        let facesBufferHandle = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, facesBufferHandle);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0, 1, 2, 0, 2, 3]),gl.STATIC_DRAW);
-        
-        gl.vertexAttribPointer(cartesianWaveProgram.uniforms.vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
+    // 32F: diferencia con webgl/webgl2
+
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      internalFormat,
+      width,
+      height,
+      0,
+      format,
+      type,
+      new Float32Array(data)
+    );
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    return { texture, textureId };
+  };
+
+  let createTextureFromMatrix = function(matrix, textureId) {
+    let internalFormat = isWebGL2 ? gl.RGBA32F : gl.RGBA;
+    let format = gl.RGBA;
+    let type = gl.FLOAT;
+
+    let raveledMatrix = [];
+    for (let j = 0; j < matrix.length; j++) {
+      for (let i = 0; i < matrix[0].length; i++) {
+        raveledMatrix.push(matrix[j][i]);
+        raveledMatrix.push(0);
+        raveledMatrix.push(0);
+        raveledMatrix.push(1);
+      }
     }
 
-    let createTextureFromData = function( width, height, data, textureId, internalFormat, format, type ) {
-        // creates a texture from an array "data" of size "width"*height"*4 with the given webgl formats and id
+    let texture = createTextureFromData(
+      matrix[1].length,
+      matrix.length,
+      raveledMatrix,
+      textureId,
+      internalFormat,
+      format,
+      type
+    );
 
-        if (!gl.getExtension("OES_texture_float")&& !gl.getExtension("EXT_color_buffer_float")) {
-            throw("Requires OES_texture_float extension");
-        }
-        
-        var texture = gl.createTexture();
-        gl.activeTexture(gl.TEXTURE0 + textureId);
-        gl.bindTexture( gl.TEXTURE_2D, texture );
+    return texture;
+  };
 
-        // 32F: diferencia con webgl/webgl2
-        
-        gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, new Float32Array(data) );
-
-        gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
-        gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
-        gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
-        gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
-        return {texture, textureId};
-            
-    }
-
-    let createTextureFromMatrix = function(matrix,textureId){
-
-        let internalFormat = isWebGL2? gl.RGBA32F : gl.RGBA;   
-        let format = gl.RGBA;
-        let type = gl.FLOAT;
-
-        let raveledMatrix = [];
-        for(let j =0; j<matrix.length;j++){
-            for(let i=0;i<matrix[0].length; i++){
-                raveledMatrix.push(matrix[j][i]);
-                raveledMatrix.push(0);
-                raveledMatrix.push(0);
-                raveledMatrix.push(1);
-            }
-        }
-
-        let texture = createTextureFromData( 
-            matrix[1].length, 
-            matrix.length,
-            raveledMatrix,
-            textureId, internalFormat, format, type )
-
-        return texture;    
-    }
-
-    let createFBO = function(textureId, w, h,internalFormat, format, type, param ){
-        /* 
+  let createFBO = function(
+    textureId,
+    w,
+    h,
+    internalFormat,
+    format,
+    type,
+    param
+  ) {
+    /* 
             textureId: integer that identifies this texture such that texId+gl.TEXTURE0 is the texture unit bound to it
             w: width (pixels)
             h: height (pixels)
@@ -1805,756 +1813,965 @@ let Model = function(data, output){
             param: type of min/mag filter: LINEAR, NEAREST, etc.
 
         */
-        // var internalFormat = gl.RGBA32F, format = gl.RGBA, type = gl.FLOAT, param = gl.NEAREST;
+    // var internalFormat = gl.RGBA32F, format = gl.RGBA, type = gl.FLOAT, param = gl.NEAREST;
 
-        gl.activeTexture(gl.TEXTURE0+textureId);
-        let texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, param);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, param);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, w, h, 0, format, type, null); //data will be rendered later
+    gl.activeTexture(gl.TEXTURE0 + textureId);
+    let texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, param);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, param);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      internalFormat,
+      w,
+      h,
+      0,
+      format,
+      type,
+      null
+    ); //data will be rendered later
 
-        let fbo = gl.createFramebuffer();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-        gl.viewport(0, 0, w, h);
-        gl.clear(gl.COLOR_BUFFER_BIT);
+    let fbo = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      texture,
+      0
+    );
+    gl.viewport(0, 0, w, h);
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
-
-        let clearBuffer = () => {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-            gl.clearColor(0,0,0,1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-        }
-        return {texture, fbo, textureId, clearBuffer};
-    }
-
-    let createDoubleFBO = function(textureId1, textureId2, w, h,internalFormat, format, type, param ){
-        
-        let fbo1 = createFBO(textureId1, w, h,internalFormat, format, type, param )
-        let fbo2 = createFBO(textureId2, w, h,internalFormat, format, type, param )
-
-        return {
-            get first(){
-                return fbo1
-            },
-            get second(){
-                return fbo2
-            },
-            swap: function(){
-                let temp = fbo1;
-                fbo1 = fbo2;
-                fbo2 = temp;
-            },
-            clearBuffers: ()=>{
-                fbo1.clearBuffer();
-                fbo2.clearBuffer();
-            }
-        }
-    }
-
-
-    let renderFrameBuffer = function(frameBuffer){
-        gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-        gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-    }
-
-    let readFBOPixels = function (frameBufferObject, left, top, width, height) {
-
-        var pixelData = new Float32Array(width * height * 4);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, frameBufferObject);
-        gl.readPixels(left, top, width, height, gl.RGBA, gl.FLOAT, pixelData);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        
-        return pixelData;
-    }
-
-    let exportBuffer = function(fbo, variableIndex=0, iStart=0, jStart = 0, 
-        Lx = discretization.numberOfCells[0], Ly = discretization.numberOfCells[1]){
-       let array = readFBOPixels(fbo, iStart, jStart, Lx, Ly);
-       array = array.filter((elem,index)=>{
-           return (index-variableIndex) % 4 == 0;
-       });
-       
-       return array;
-   }
-
-
-    /* Programs for initial condition */
-    let renderInitialProgram = function(){
-        
-        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
-        gl.useProgram(initialProgram.program);
-        gl.uniform1i(initialProgram.uniforms.bathymetry, bathymetry.texture.textureId);
-        gl.uniform1i(initialProgram.uniforms.initialSurface, initialSurface.texture.textureId);
-
-        gl.uniform2f(initialProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
-
-        gl.uniform1f(initialProgram.uniforms.xmin, domain.xmin) ;
-        gl.uniform1f(initialProgram.uniforms.xmax, domain.xmax) ;
-        gl.uniform1f(initialProgram.uniforms.ymin, domain.ymin) ;
-        gl.uniform1f(initialProgram.uniforms.ymax, domain.ymax) ;
-
-        gl.uniform1f(initialProgram.uniforms.isSubrectangle, initialSurface.isSubrectangle);
-
-        if(initialSurface.isSubrectangle){
-            gl.uniform1f(initialProgram.uniforms.L, initialSurface.L);
-            gl.uniform1f(initialProgram.uniforms.W, initialSurface.W);
-            gl.uniform1f(initialProgram.uniforms.ce, initialSurface.ce);
-            gl.uniform1f(initialProgram.uniforms.cn, initialSurface.cn);
-        }
-        
-        if(domain.coordinates == 'cartesian'){
-            gl.uniform1i(initialProgram.uniforms.coordinates, 0);
-        }
-        else if(domain.coordinates == 'spherical'){
-            gl.uniform1i(initialProgram.uniforms.coordinates, 1);
-        }
-        renderFrameBuffer(wave.first.fbo);
-    }
-
-    let renderOkadaProgram = function(finiteFault){
-        
-        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
-        gl.useProgram(okadaProgram.program);
-        gl.uniform1i(okadaProgram.uniforms.bathymetry, bathymetry.texture.textureId);
-
-
-        gl.uniform2f(okadaProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
-
-        gl.uniform1f(okadaProgram.uniforms.xmin, domain.xmin) ;
-        gl.uniform1f(okadaProgram.uniforms.xmax, domain.xmax) ;
-        gl.uniform1f(okadaProgram.uniforms.ymin, domain.ymin) ;
-        gl.uniform1f(okadaProgram.uniforms.ymax, domain.ymax) ;
-
-
-        gl.uniform1f(okadaProgram.uniforms.L, finiteFault.L);
-        gl.uniform1f(okadaProgram.uniforms.W, finiteFault.W);
-        gl.uniform1f(okadaProgram.uniforms.depth, finiteFault.depth);
-        gl.uniform1f(okadaProgram.uniforms.slip, finiteFault.slip);
-        gl.uniform1f(okadaProgram.uniforms.strike, finiteFault.strike);
-        gl.uniform1f(okadaProgram.uniforms.dip, finiteFault.dip);
-        gl.uniform1f(okadaProgram.uniforms.rake, finiteFault.rake);
-        gl.uniform1f(okadaProgram.uniforms.U3, finiteFault.U3);
-        gl.uniform1f(okadaProgram.uniforms.cn, finiteFault.cn);
-        gl.uniform1f(okadaProgram.uniforms.ce, finiteFault.ce);
-        gl.uniform1i(okadaProgram.uniforms.previousTexture, wave.first.textureId);
-
-
-        finiteFault.reference = finiteFault.reference.replace(String.fromCharCode(13),"");
-        
-        if(finiteFault.reference == 'center'){
-            gl.uniform1i(okadaProgram.uniforms.reference, 0);
-        }
-        else if(finiteFault.reference == 'begin top'){
-            gl.uniform1i(okadaProgram.uniforms.reference, 1);
-        }
-        else if(finiteFault.reference == 'mid top'){
-            gl.uniform1i(okadaProgram.uniforms.reference, 2);
-        }
-        else if(finiteFault.reference == 'begin bottom'){
-            gl.uniform1i(okadaProgram.uniforms.reference, 3);
-        }
-        else if(finiteFault.reference == 'mid bottom'){
-            gl.uniform1i(okadaProgram.uniforms.reference, 4);
-        }
-        
-        if(domain.coordinates == 'cartesian'){
-            gl.uniform1i(okadaProgram.uniforms.coordinates, 0);
-        }
-        else if(domain.coordinates == 'spherical'){
-            gl.uniform1i(okadaProgram.uniforms.coordinates, 1);
-        }
-
-        renderFrameBuffer(wave.second.fbo);
-    }
-
-    let renderAsteroidProgram = function(){
-        
-        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
-        gl.useProgram(asteroidProgram.program);
-        gl.uniform1i(asteroidProgram.uniforms.bathymetry, bathymetry.texture.textureId);
-
-
-        gl.uniform2f(asteroidProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
-
-        gl.uniform1f(asteroidProgram.uniforms.xmin, domain.xmin) ;
-        gl.uniform1f(asteroidProgram.uniforms.xmax, domain.xmax) ;
-        gl.uniform1f(asteroidProgram.uniforms.ymin, domain.ymin) ;
-        gl.uniform1f(asteroidProgram.uniforms.ymax, domain.ymax) ;
-
-
-        gl.uniform1f(asteroidProgram.uniforms.R_i, asteroid.R_i);
-        gl.uniform1f(asteroidProgram.uniforms.v_i, asteroid.v_i);
-        gl.uniform1f(asteroidProgram.uniforms.rho_i, asteroid.rho_i);
-        gl.uniform1f(asteroidProgram.uniforms.ce, asteroid.ce);
-        gl.uniform1f(asteroidProgram.uniforms.cn, asteroid.cn);
-       
-        if(domain.coordinates == 'cartesian'){
-            gl.uniform1i(asteroidProgram.uniforms.coordinates, 0);
-        }
-        else if(domain.coordinates == 'spherical'){
-            gl.uniform1i(asteroidProgram.uniforms.coordinates, 1);
-        }
-
-        renderFrameBuffer(wave.first.fbo);
-    }
-
-    let renderEarthquake = () => {
-        for(let i = 0; i < earthquake.length; i++){
-            renderOkadaProgram(earthquake[i]);
-            wave.swap();
-        }
-    }
-
-
-    /* Cartesian equations */
-    let renderCartesianProgram = function(){
-
-        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
-        gl.useProgram(cartesianWaveProgram.program);
-        gl.uniform2f(cartesianWaveProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
-        gl.uniform1i(cartesianWaveProgram.uniforms.u0, wave.first.textureId);
-
-        gl.uniform1f(cartesianWaveProgram.uniforms.dx, discretization.dx);
-        gl.uniform1f(cartesianWaveProgram.uniforms.dy, discretization.dy);
-        gl.uniform1f(cartesianWaveProgram.uniforms.dt, discretization.dt);
-
-        renderFrameBuffer(wave.second.fbo);
-        wave.swap();
-
-    }
-
-
-    /* Cartesian dispersive equations */
-    let renderCartesianDispersiveMassProgram = function(){
-        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
-        
-        gl.useProgram(cartesianDispersiveMassProgram.program);
-        
-        gl.uniform1i(cartesianDispersiveMassProgram.uniforms.u0, wave.first.textureId);
-        gl.uniform2f(cartesianDispersiveMassProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
-        gl.uniform1f(cartesianDispersiveMassProgram.uniforms.dt, discretization.dt);
-        gl.uniform1f(cartesianDispersiveMassProgram.uniforms.dx, discretization.dx);
-        gl.uniform1f(cartesianDispersiveMassProgram.uniforms.dy, discretization.dy);
-
-        renderFrameBuffer(wave.second.fbo);
-        wave.swap();
+    let clearBuffer = () => {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
     };
+    return { texture, fbo, textureId, clearBuffer };
+  };
 
-    let renderCartesianDispersiveMomentumProgram = function(){
-        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
-        
-        gl.useProgram(cartesianDispersiveMomentumProgram.program);
+  let createDoubleFBO = function(
+    textureId1,
+    textureId2,
+    w,
+    h,
+    internalFormat,
+    format,
+    type,
+    param
+  ) {
+    let fbo1 = createFBO(textureId1, w, h, internalFormat, format, type, param);
+    let fbo2 = createFBO(textureId2, w, h, internalFormat, format, type, param);
 
-        gl.uniform1i(cartesianDispersiveMomentumProgram.uniforms.u0, wave.first.textureId);
-        gl.uniform2f(cartesianDispersiveMomentumProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
-        gl.uniform1f(cartesianDispersiveMomentumProgram.uniforms.dt, discretization.dt);
-        gl.uniform1f(cartesianDispersiveMomentumProgram.uniforms.dx, discretization.dx);
-        gl.uniform1f(cartesianDispersiveMomentumProgram.uniforms.dy, discretization.dy);
-
-        renderFrameBuffer(wave.second.fbo);
-        wave.swap();
+    return {
+      get first() {
+        return fbo1;
+      },
+      get second() {
+        return fbo2;
+      },
+      swap: function() {
+        let temp = fbo1;
+        fbo1 = fbo2;
+        fbo2 = temp;
+      },
+      clearBuffers: () => {
+        fbo1.clearBuffer();
+        fbo2.clearBuffer();
+      }
     };
+  };
 
-    let renderCartesianDispersiveProgram = function(){
-        renderCartesianDispersiveMassProgram();
-        renderCartesianDispersiveMomentumProgram();
-    };
+  let renderFrameBuffer = function(frameBuffer) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+  };
 
+  let readFBOPixels = function(frameBufferObject, left, top, width, height) {
+    var pixelData = new Float32Array(width * height * 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBufferObject);
+    gl.readPixels(left, top, width, height, gl.RGBA, gl.FLOAT, pixelData);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    /* Spherical equations */
-    let renderSphericalMassStepProgram = function(){
-        gl.useProgram(sphericalMassStepProgram.program);
-        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
+    return pixelData;
+  };
 
+  let exportBuffer = function(
+    fbo,
+    variableIndex = 0,
+    iStart = 0,
+    jStart = 0,
+    Lx = discretization.numberOfCells[0],
+    Ly = discretization.numberOfCells[1]
+  ) {
+    let array = readFBOPixels(fbo, iStart, jStart, Lx, Ly);
+    array = array.filter((elem, index) => {
+      return (index - variableIndex) % 4 == 0;
+    });
 
-        gl.uniform1f(sphericalMassStepProgram.uniforms.dlon, discretization.dlon);
-        gl.uniform1f(sphericalMassStepProgram.uniforms.dlat, discretization.dlat);
-        gl.uniform1f(sphericalMassStepProgram.uniforms.dt, discretization.dt);
-        gl.uniform1f(sphericalMassStepProgram.uniforms.xmin, domain.xmin);
-        gl.uniform1f(sphericalMassStepProgram.uniforms.xmax, domain.xmax);
-        gl.uniform1f(sphericalMassStepProgram.uniforms.ymin, domain.ymin);
-        gl.uniform1f(sphericalMassStepProgram.uniforms.ymax, domain.ymax);
+    return array;
+  };
 
-        
-        gl.uniform2f(sphericalMassStepProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
-        gl.uniform1i(sphericalMassStepProgram.uniforms.u0, wave.first.textureId);
-        gl.uniform1i(sphericalMassStepProgram.uniforms.isPeriodic, domain.isPeriodic);
-        renderFrameBuffer(wave.second.fbo);
-        wave.swap();
+  /* Programs for initial condition */
+  let renderInitialProgram = function() {
+    gl.viewport(
+      0,
+      0,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1]
+    );
+    gl.useProgram(initialProgram.program);
+    gl.uniform1i(
+      initialProgram.uniforms.bathymetry,
+      bathymetry.texture.textureId
+    );
+    gl.uniform1i(
+      initialProgram.uniforms.initialSurface,
+      initialSurface.texture.textureId
+    );
+
+    gl.uniform2f(
+      initialProgram.uniforms.texel,
+      1 / discretization.numberOfCells[0],
+      1 / discretization.numberOfCells[1]
+    );
+
+    gl.uniform1f(initialProgram.uniforms.xmin, domain.xmin);
+    gl.uniform1f(initialProgram.uniforms.xmax, domain.xmax);
+    gl.uniform1f(initialProgram.uniforms.ymin, domain.ymin);
+    gl.uniform1f(initialProgram.uniforms.ymax, domain.ymax);
+
+    gl.uniform1f(
+      initialProgram.uniforms.isSubrectangle,
+      initialSurface.isSubrectangle
+    );
+
+    if (initialSurface.isSubrectangle) {
+      gl.uniform1f(initialProgram.uniforms.L, initialSurface.L);
+      gl.uniform1f(initialProgram.uniforms.W, initialSurface.W);
+      gl.uniform1f(initialProgram.uniforms.ce, initialSurface.ce);
+      gl.uniform1f(initialProgram.uniforms.cn, initialSurface.cn);
     }
 
-    let renderSphericalMomentumStepProgram = function(){
-        gl.useProgram(sphericalMomentumStepProgram.program);
-        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
+    if (domain.coordinates == "cartesian") {
+      gl.uniform1i(initialProgram.uniforms.coordinates, 0);
+    } else if (domain.coordinates == "spherical") {
+      gl.uniform1i(initialProgram.uniforms.coordinates, 1);
+    }
+    renderFrameBuffer(wave.first.fbo);
+  };
 
+  let renderOkadaProgram = function(finiteFault) {
+    gl.viewport(
+      0,
+      0,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1]
+    );
+    gl.useProgram(okadaProgram.program);
+    gl.uniform1i(
+      okadaProgram.uniforms.bathymetry,
+      bathymetry.texture.textureId
+    );
 
-        gl.uniform1f(sphericalMomentumStepProgram.uniforms.dlon, discretization.dlon);
-        gl.uniform1f(sphericalMomentumStepProgram.uniforms.dlat, discretization.dlat);
-        gl.uniform1f(sphericalMomentumStepProgram.uniforms.dt, discretization.dt);
-        gl.uniform1f(sphericalMomentumStepProgram.uniforms.xmin, domain.xmin);
-        gl.uniform1f(sphericalMomentumStepProgram.uniforms.xmax, domain.xmax);
-        gl.uniform1f(sphericalMomentumStepProgram.uniforms.ymin, domain.ymin);
-        gl.uniform1f(sphericalMomentumStepProgram.uniforms.ymax, domain.ymax);
+    gl.uniform2f(
+      okadaProgram.uniforms.texel,
+      1 / discretization.numberOfCells[0],
+      1 / discretization.numberOfCells[1]
+    );
 
-        
-        gl.uniform2f(sphericalMomentumStepProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
-        gl.uniform1i(sphericalMomentumStepProgram.uniforms.u0, wave.first.textureId);
-        gl.uniform1i(sphericalMomentumStepProgram.uniforms.isPeriodic, domain.isPeriodic);
-        renderFrameBuffer(wave.second.fbo);
-        wave.swap();
+    gl.uniform1f(okadaProgram.uniforms.xmin, domain.xmin);
+    gl.uniform1f(okadaProgram.uniforms.xmax, domain.xmax);
+    gl.uniform1f(okadaProgram.uniforms.ymin, domain.ymin);
+    gl.uniform1f(okadaProgram.uniforms.ymax, domain.ymax);
+
+    gl.uniform1f(okadaProgram.uniforms.L, finiteFault.L);
+    gl.uniform1f(okadaProgram.uniforms.W, finiteFault.W);
+    gl.uniform1f(okadaProgram.uniforms.depth, finiteFault.depth);
+    gl.uniform1f(okadaProgram.uniforms.slip, finiteFault.slip);
+    gl.uniform1f(okadaProgram.uniforms.strike, finiteFault.strike);
+    gl.uniform1f(okadaProgram.uniforms.dip, finiteFault.dip);
+    gl.uniform1f(okadaProgram.uniforms.rake, finiteFault.rake);
+    gl.uniform1f(okadaProgram.uniforms.U3, finiteFault.U3);
+    gl.uniform1f(okadaProgram.uniforms.cn, finiteFault.cn);
+    gl.uniform1f(okadaProgram.uniforms.ce, finiteFault.ce);
+    gl.uniform1i(okadaProgram.uniforms.previousTexture, wave.first.textureId);
+
+    finiteFault.reference = finiteFault.reference.replace(
+      String.fromCharCode(13),
+      ""
+    );
+
+    if (finiteFault.reference == "center") {
+      gl.uniform1i(okadaProgram.uniforms.reference, 0);
+    } else if (finiteFault.reference == "begin top") {
+      gl.uniform1i(okadaProgram.uniforms.reference, 1);
+    } else if (finiteFault.reference == "mid top") {
+      gl.uniform1i(okadaProgram.uniforms.reference, 2);
+    } else if (finiteFault.reference == "begin bottom") {
+      gl.uniform1i(okadaProgram.uniforms.reference, 3);
+    } else if (finiteFault.reference == "mid bottom") {
+      gl.uniform1i(okadaProgram.uniforms.reference, 4);
     }
 
-    let renderSphericalWaveEquation = function(){
-        renderSphericalMassStepProgram();
-        renderSphericalMomentumStepProgram();
+    if (domain.coordinates == "cartesian") {
+      gl.uniform1i(okadaProgram.uniforms.coordinates, 0);
+    } else if (domain.coordinates == "spherical") {
+      gl.uniform1i(okadaProgram.uniforms.coordinates, 1);
     }
 
+    renderFrameBuffer(wave.second.fbo);
+  };
 
-    /* Spherical dispersive equations */
-    let renderDispersiveMassStepProgram = function(){
-        gl.useProgram(dispersiveMassStepProgram.program);
-        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
+  let renderAsteroidProgram = function() {
+    gl.viewport(
+      0,
+      0,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1]
+    );
+    gl.useProgram(asteroidProgram.program);
+    gl.uniform1i(
+      asteroidProgram.uniforms.bathymetry,
+      bathymetry.texture.textureId
+    );
 
+    gl.uniform2f(
+      asteroidProgram.uniforms.texel,
+      1 / discretization.numberOfCells[0],
+      1 / discretization.numberOfCells[1]
+    );
 
-        gl.uniform1f(dispersiveMassStepProgram.uniforms.dlon, discretization.dlon);
-        gl.uniform1f(dispersiveMassStepProgram.uniforms.dlat, discretization.dlat);
-        gl.uniform1f(dispersiveMassStepProgram.uniforms.dt, discretization.dt);
-        gl.uniform1f(dispersiveMassStepProgram.uniforms.xmin, domain.xmin);
-        gl.uniform1f(dispersiveMassStepProgram.uniforms.xmax, domain.xmax);
-        gl.uniform1f(dispersiveMassStepProgram.uniforms.ymin, domain.ymin);
-        gl.uniform1f(dispersiveMassStepProgram.uniforms.ymax, domain.ymax);
+    gl.uniform1f(asteroidProgram.uniforms.xmin, domain.xmin);
+    gl.uniform1f(asteroidProgram.uniforms.xmax, domain.xmax);
+    gl.uniform1f(asteroidProgram.uniforms.ymin, domain.ymin);
+    gl.uniform1f(asteroidProgram.uniforms.ymax, domain.ymax);
 
-        
-        gl.uniform2f(dispersiveMassStepProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
-        gl.uniform1i(dispersiveMassStepProgram.uniforms.u0, wave.first.textureId);
-        gl.uniform1i(dispersiveMassStepProgram.uniforms.isPeriodic, domain.isPeriodic);
-        renderFrameBuffer(wave.second.fbo);
-        wave.swap();
+    gl.uniform1f(asteroidProgram.uniforms.R_i, asteroid.R_i);
+    gl.uniform1f(asteroidProgram.uniforms.v_i, asteroid.v_i);
+    gl.uniform1f(asteroidProgram.uniforms.rho_i, asteroid.rho_i);
+    gl.uniform1f(asteroidProgram.uniforms.ce, asteroid.ce);
+    gl.uniform1f(asteroidProgram.uniforms.cn, asteroid.cn);
+
+    if (domain.coordinates == "cartesian") {
+      gl.uniform1i(asteroidProgram.uniforms.coordinates, 0);
+    } else if (domain.coordinates == "spherical") {
+      gl.uniform1i(asteroidProgram.uniforms.coordinates, 1);
     }
 
-    let renderDispersiveMomentumStepProgram = function(){
-        gl.useProgram(dispersiveMomentumStepProgram.program);
-        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
+    renderFrameBuffer(wave.first.fbo);
+  };
 
-
-        gl.uniform1f(dispersiveMomentumStepProgram.uniforms.dlon, discretization.dlon);
-        gl.uniform1f(dispersiveMomentumStepProgram.uniforms.dlat, discretization.dlat);
-        gl.uniform1f(dispersiveMomentumStepProgram.uniforms.dt, discretization.dt);
-        gl.uniform1f(dispersiveMomentumStepProgram.uniforms.xmin, domain.xmin);
-        gl.uniform1f(dispersiveMomentumStepProgram.uniforms.xmax, domain.xmax);
-        gl.uniform1f(dispersiveMomentumStepProgram.uniforms.ymin, domain.ymin);
-        gl.uniform1f(dispersiveMomentumStepProgram.uniforms.ymax, domain.ymax);
-
-        
-        gl.uniform2f(dispersiveMomentumStepProgram.uniforms.texel, 1/discretization.numberOfCells[0], 1/discretization.numberOfCells[1]);
-        gl.uniform1i(dispersiveMomentumStepProgram.uniforms.u0, wave.first.textureId);
-        gl.uniform1i(dispersiveMomentumStepProgram.uniforms.isPeriodic, domain.isPeriodic);
-        renderFrameBuffer(wave.second.fbo);
-        wave.swap();
+  let renderEarthquake = () => {
+    for (let i = 0; i < earthquake.length; i++) {
+      renderOkadaProgram(earthquake[i]);
+      wave.swap();
     }
+  };
 
-    let renderDispersiveWaveEquation = function(){
-        renderDispersiveMassStepProgram();
-        renderDispersiveMomentumStepProgram();
+  /* Cartesian equations */
+  let renderCartesianProgram = function() {
+    gl.viewport(
+      0,
+      0,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1]
+    );
+    gl.useProgram(cartesianWaveProgram.program);
+    gl.uniform2f(
+      cartesianWaveProgram.uniforms.texel,
+      1 / discretization.numberOfCells[0],
+      1 / discretization.numberOfCells[1]
+    );
+    gl.uniform1i(cartesianWaveProgram.uniforms.u0, wave.first.textureId);
+
+    gl.uniform1f(cartesianWaveProgram.uniforms.dx, discretization.dx);
+    gl.uniform1f(cartesianWaveProgram.uniforms.dy, discretization.dy);
+    gl.uniform1f(cartesianWaveProgram.uniforms.dt, discretization.dt);
+
+    renderFrameBuffer(wave.second.fbo);
+    wave.swap();
+  };
+
+  /* Cartesian dispersive equations */
+  let renderCartesianDispersiveMassProgram = function() {
+    gl.viewport(
+      0,
+      0,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1]
+    );
+
+    gl.useProgram(cartesianDispersiveMassProgram.program);
+
+    gl.uniform1i(
+      cartesianDispersiveMassProgram.uniforms.u0,
+      wave.first.textureId
+    );
+    gl.uniform2f(
+      cartesianDispersiveMassProgram.uniforms.texel,
+      1 / discretization.numberOfCells[0],
+      1 / discretization.numberOfCells[1]
+    );
+    gl.uniform1f(cartesianDispersiveMassProgram.uniforms.dt, discretization.dt);
+    gl.uniform1f(cartesianDispersiveMassProgram.uniforms.dx, discretization.dx);
+    gl.uniform1f(cartesianDispersiveMassProgram.uniforms.dy, discretization.dy);
+
+    renderFrameBuffer(wave.second.fbo);
+    wave.swap();
+  };
+
+  let renderCartesianDispersiveMomentumProgram = function() {
+    gl.viewport(
+      0,
+      0,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1]
+    );
+
+    gl.useProgram(cartesianDispersiveMomentumProgram.program);
+
+    gl.uniform1i(
+      cartesianDispersiveMomentumProgram.uniforms.u0,
+      wave.first.textureId
+    );
+    gl.uniform2f(
+      cartesianDispersiveMomentumProgram.uniforms.texel,
+      1 / discretization.numberOfCells[0],
+      1 / discretization.numberOfCells[1]
+    );
+    gl.uniform1f(
+      cartesianDispersiveMomentumProgram.uniforms.dt,
+      discretization.dt
+    );
+    gl.uniform1f(
+      cartesianDispersiveMomentumProgram.uniforms.dx,
+      discretization.dx
+    );
+    gl.uniform1f(
+      cartesianDispersiveMomentumProgram.uniforms.dy,
+      discretization.dy
+    );
+
+    renderFrameBuffer(wave.second.fbo);
+    wave.swap();
+  };
+
+  let renderCartesianDispersiveProgram = function() {
+    renderCartesianDispersiveMassProgram();
+    renderCartesianDispersiveMomentumProgram();
+  };
+
+  /* Spherical equations */
+  let renderSphericalMassStepProgram = function() {
+    gl.useProgram(sphericalMassStepProgram.program);
+    gl.viewport(
+      0,
+      0,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1]
+    );
+
+    gl.uniform1f(sphericalMassStepProgram.uniforms.dlon, discretization.dlon);
+    gl.uniform1f(sphericalMassStepProgram.uniforms.dlat, discretization.dlat);
+    gl.uniform1f(sphericalMassStepProgram.uniforms.dt, discretization.dt);
+    gl.uniform1f(sphericalMassStepProgram.uniforms.xmin, domain.xmin);
+    gl.uniform1f(sphericalMassStepProgram.uniforms.xmax, domain.xmax);
+    gl.uniform1f(sphericalMassStepProgram.uniforms.ymin, domain.ymin);
+    gl.uniform1f(sphericalMassStepProgram.uniforms.ymax, domain.ymax);
+
+    gl.uniform2f(
+      sphericalMassStepProgram.uniforms.texel,
+      1 / discretization.numberOfCells[0],
+      1 / discretization.numberOfCells[1]
+    );
+    gl.uniform1i(sphericalMassStepProgram.uniforms.u0, wave.first.textureId);
+    gl.uniform1i(
+      sphericalMassStepProgram.uniforms.isPeriodic,
+      domain.isPeriodic
+    );
+    renderFrameBuffer(wave.second.fbo);
+    wave.swap();
+  };
+
+  let renderSphericalMomentumStepProgram = function() {
+    gl.useProgram(sphericalMomentumStepProgram.program);
+    gl.viewport(
+      0,
+      0,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1]
+    );
+
+    gl.uniform1f(
+      sphericalMomentumStepProgram.uniforms.dlon,
+      discretization.dlon
+    );
+    gl.uniform1f(
+      sphericalMomentumStepProgram.uniforms.dlat,
+      discretization.dlat
+    );
+    gl.uniform1f(sphericalMomentumStepProgram.uniforms.dt, discretization.dt);
+    gl.uniform1f(sphericalMomentumStepProgram.uniforms.xmin, domain.xmin);
+    gl.uniform1f(sphericalMomentumStepProgram.uniforms.xmax, domain.xmax);
+    gl.uniform1f(sphericalMomentumStepProgram.uniforms.ymin, domain.ymin);
+    gl.uniform1f(sphericalMomentumStepProgram.uniforms.ymax, domain.ymax);
+
+    gl.uniform2f(
+      sphericalMomentumStepProgram.uniforms.texel,
+      1 / discretization.numberOfCells[0],
+      1 / discretization.numberOfCells[1]
+    );
+    gl.uniform1i(
+      sphericalMomentumStepProgram.uniforms.u0,
+      wave.first.textureId
+    );
+    gl.uniform1i(
+      sphericalMomentumStepProgram.uniforms.isPeriodic,
+      domain.isPeriodic
+    );
+    renderFrameBuffer(wave.second.fbo);
+    wave.swap();
+  };
+
+  let renderSphericalWaveEquation = function() {
+    renderSphericalMassStepProgram();
+    renderSphericalMomentumStepProgram();
+  };
+
+  /* Spherical dispersive equations */
+  let renderDispersiveMassStepProgram = function() {
+    gl.useProgram(dispersiveMassStepProgram.program);
+    gl.viewport(
+      0,
+      0,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1]
+    );
+
+    gl.uniform1f(dispersiveMassStepProgram.uniforms.dlon, discretization.dlon);
+    gl.uniform1f(dispersiveMassStepProgram.uniforms.dlat, discretization.dlat);
+    gl.uniform1f(dispersiveMassStepProgram.uniforms.dt, discretization.dt);
+    gl.uniform1f(dispersiveMassStepProgram.uniforms.xmin, domain.xmin);
+    gl.uniform1f(dispersiveMassStepProgram.uniforms.xmax, domain.xmax);
+    gl.uniform1f(dispersiveMassStepProgram.uniforms.ymin, domain.ymin);
+    gl.uniform1f(dispersiveMassStepProgram.uniforms.ymax, domain.ymax);
+
+    gl.uniform2f(
+      dispersiveMassStepProgram.uniforms.texel,
+      1 / discretization.numberOfCells[0],
+      1 / discretization.numberOfCells[1]
+    );
+    gl.uniform1i(dispersiveMassStepProgram.uniforms.u0, wave.first.textureId);
+    gl.uniform1i(
+      dispersiveMassStepProgram.uniforms.isPeriodic,
+      domain.isPeriodic
+    );
+    renderFrameBuffer(wave.second.fbo);
+    wave.swap();
+  };
+
+  let renderDispersiveMomentumStepProgram = function() {
+    gl.useProgram(dispersiveMomentumStepProgram.program);
+    gl.viewport(
+      0,
+      0,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1]
+    );
+
+    gl.uniform1f(
+      dispersiveMomentumStepProgram.uniforms.dlon,
+      discretization.dlon
+    );
+    gl.uniform1f(
+      dispersiveMomentumStepProgram.uniforms.dlat,
+      discretization.dlat
+    );
+    gl.uniform1f(dispersiveMomentumStepProgram.uniforms.dt, discretization.dt);
+    gl.uniform1f(dispersiveMomentumStepProgram.uniforms.xmin, domain.xmin);
+    gl.uniform1f(dispersiveMomentumStepProgram.uniforms.xmax, domain.xmax);
+    gl.uniform1f(dispersiveMomentumStepProgram.uniforms.ymin, domain.ymin);
+    gl.uniform1f(dispersiveMomentumStepProgram.uniforms.ymax, domain.ymax);
+
+    gl.uniform2f(
+      dispersiveMomentumStepProgram.uniforms.texel,
+      1 / discretization.numberOfCells[0],
+      1 / discretization.numberOfCells[1]
+    );
+    gl.uniform1i(
+      dispersiveMomentumStepProgram.uniforms.u0,
+      wave.first.textureId
+    );
+    gl.uniform1i(
+      dispersiveMomentumStepProgram.uniforms.isPeriodic,
+      domain.isPeriodic
+    );
+    renderFrameBuffer(wave.second.fbo);
+    wave.swap();
+  };
+
+  let renderDispersiveWaveEquation = function() {
+    renderDispersiveMassStepProgram();
+    renderDispersiveMomentumStepProgram();
+  };
+
+  /* Additional programs that use the results of simulations */
+
+  let renderMaxHeightsProgram = () => {
+    gl.useProgram(maxHeightsProgram.program);
+    gl.viewport(
+      0,
+      0,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1]
+    );
+
+    gl.uniform1f(
+      maxHeightsProgram.uniforms.currentTime,
+      discretization.stepNumber * discretization.dt
+    );
+    gl.uniform1i(
+      maxHeightsProgram.uniforms.maxHeights,
+      maxHeights.first.textureId
+    );
+    gl.uniform1i(maxHeightsProgram.uniforms.wave, wave.first.textureId);
+    renderFrameBuffer(maxHeights.second.fbo);
+    maxHeights.swap();
+  };
+
+  let renderDisplayProgram = function() {
+    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+    gl.useProgram(displayProgram.program);
+    gl.uniform4fv(
+      displayProgram.uniforms.colormap,
+      new Float32Array(colormap.rgba)
+    );
+    gl.uniform1fv(
+      displayProgram.uniforms.thresholds,
+      new Float32Array(colormap.thresholds)
+    );
+
+    let displayedChannel = 0;
+    if (displayOption === "heights") {
+      gl.uniform1i(displayProgram.uniforms.field, wave.first.textureId); //TDDO: fix texid
+    } else if (
+      displayOption === "max heights" ||
+      displayOption === "arrival times"
+    ) {
+      gl.uniform1i(displayProgram.uniforms.field, maxHeights.first.textureId);
+      if (displayOption === "arrival times") displayedChannel = 1;
     }
+    gl.uniform1i(displayProgram.uniforms.displayedChannel, displayedChannel);
 
+    renderFrameBuffer(null);
+  };
 
-    /* Additional programs that use the results of simulations */
-
-    let renderMaxHeightsProgram = () => {
-        gl.useProgram(maxHeightsProgram.program);
-        gl.viewport(0, 0, discretization.numberOfCells[0], discretization.numberOfCells[1]);
-
-        gl.uniform1f(maxHeightsProgram.uniforms.currentTime, discretization.stepNumber * discretization.dt);
-        gl.uniform1i(maxHeightsProgram.uniforms.maxHeights, maxHeights.first.textureId);
-        gl.uniform1i(maxHeightsProgram.uniforms.wave, wave.first.textureId);
-        renderFrameBuffer(maxHeights.second.fbo);
-        maxHeights.swap();
-    }
-        
-    let renderDisplayProgram = function(){
-        
-        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-        gl.useProgram(displayProgram.program);
-        gl.uniform4fv(displayProgram.uniforms.colormap, new Float32Array(colormap.rgba));
-        gl.uniform1fv(displayProgram.uniforms.thresholds, new Float32Array(colormap.thresholds));
-        
-        let displayedChannel = 0 ;
-        if( displayOption === 'heights'){
-            gl.uniform1i(displayProgram.uniforms.field, wave.first.textureId );//TDDO: fix texid
-        }
-        else if( displayOption === 'max heights' || displayOption === 'arrival times'){
-
-            gl.uniform1i(displayProgram.uniforms.field, maxHeights.first.textureId );
-            if(displayOption === 'arrival times') displayedChannel = 1;
-        }
-        gl.uniform1i(displayProgram.uniforms.displayedChannel, displayedChannel)
-
-        renderFrameBuffer(null);
-
-    }
-
-
-
-    let setPOIs = function(){
-        /*
+  let setPOIs = function() {
+    /*
             Initializes the list of pois in the model
         */
 
-       if(Object.keys(pois).length === 0) return;
-       
-       let bathymetryTemp = exportBuffer(wave.first.fbo, 3, 0, 0, data.waveWidth, data.waveHeight);
-       bathymetryTemp = [... bathymetryTemp];
+    if (Object.keys(pois).length === 0) return;
 
-    
-       let bathymetry = [];
+    let bathymetryTemp = exportBuffer(
+      wave.first.fbo,
+      3,
+      0,
+      0,
+      data.waveWidth,
+      data.waveHeight
+    );
+    bathymetryTemp = [...bathymetryTemp];
 
-       while (bathymetryTemp.length > 0) bathymetry.push(bathymetryTemp.splice(0, data.waveWidth));
+    let bathymetry = [];
 
-    
+    while (bathymetryTemp.length > 0)
+      bathymetry.push(bathymetryTemp.splice(0, data.waveWidth));
 
-        Object.keys(pois).forEach(function(poi){
-            const dlon = discretization.dlon;
-            const dlat = discretization.dlat;
-            const lowerLeftCorner = [domain.xmin, domain.ymin];
+    Object.keys(pois).forEach(function(poi) {
+      const dlon = discretization.dlon;
+      const dlat = discretization.dlat;
+      const lowerLeftCorner = [domain.xmin, domain.ymin];
 
-            pois[poi].location[0] = pois[poi].location[0];
+      pois[poi].location[0] = pois[poi].location[0];
 
-            const i = Math.floor((pois[poi].location[0]-lowerLeftCorner[0])/(dlon/60.0)+0.5);
-            const j = Math.floor((pois[poi].location[1]-lowerLeftCorner[1])/(dlat/60.0)+0.5);
+      const i = Math.floor(
+        (pois[poi].location[0] - lowerLeftCorner[0]) / (dlon / 60.0) + 0.5
+      );
+      const j = Math.floor(
+        (pois[poi].location[1] - lowerLeftCorner[1]) / (dlat / 60.0) + 0.5
+      );
 
-            pois[poi].pixel = [i,j];
-            pois[poi].surface = [];
-            pois[poi].time = [];
-            
-            // if depth is provided and is shallow then use it, otherwise get it from the matrix
-            // the texture is read in [j][i] order
-            pois[poi].depth = (pois[poi].depth && pois[poi].depth < 100) ? pois[poi].depth : bathymetry[j][i]; 
-            
-            pois[poi].shallowCorrectionFactor = 1;
-            pois[poi].closestDeepPoint = [];
-            pois[poi].closestDeepPointDepth = undefined;
+      pois[poi].pixel = [i, j];
+      pois[poi].surface = [];
+      pois[poi].time = [];
 
-            // if point is in shallow water look for closest point in deep water:
-            let closestDeepPointDistance = Infinity;
-            if(  pois[poi].depth <=100 ){
-                console.log('shallow poi:', poi)
-                for(let j0 = 0; j0< bathymetry.length; j0++){
-                    for(let i0 = 0; i0 < bathymetry[0].length; i0++){
-                        const distance = (i0-i)*(i0-i) + (j0-j)*(j0-j); // assumes uniform cartesian grid
-                        if(bathymetry[j0][i0]>100.0 && distance < closestDeepPointDistance){
-                            pois[poi].closestDeepPoint = [i0, j0];
-                            pois[poi].closestDeepPointDepth = bathymetry[j0][i0];
-                            closestDeepPointDistance = distance;
-                        }
-                    }
-                }
-                
-                const d = Math.max(pois[poi].depth, 1.0);
-                const d0 = pois[poi].closestDeepPointDepth;
-                pois[poi].originalPixel = pois[poi].pixel;
-                pois[poi].pixel = pois[poi].closestDeepPoint;
-                pois[poi].shallowCorrectionFactor = Math.pow(d0/d,0.25);
+      // if depth is provided and is shallow then use it, otherwise get it from the matrix
+      // the texture is read in [j][i] order
+      pois[poi].depth =
+        pois[poi].depth && pois[poi].depth < 100
+          ? pois[poi].depth
+          : bathymetry[j][i];
 
+      pois[poi].shallowCorrectionFactor = 1;
+      pois[poi].closestDeepPoint = [];
+      pois[poi].closestDeepPointDepth = undefined;
 
+      // if point is in shallow water look for closest point in deep water:
+      let closestDeepPointDistance = Infinity;
+      if (pois[poi].depth <= 100) {
+        console.log("shallow poi:", poi);
+        for (let j0 = 0; j0 < bathymetry.length; j0++) {
+          for (let i0 = 0; i0 < bathymetry[0].length; i0++) {
+            const distance = (i0 - i) * (i0 - i) + (j0 - j) * (j0 - j); // assumes uniform cartesian grid
+            if (
+              bathymetry[j0][i0] > 100.0 &&
+              distance < closestDeepPointDistance
+            ) {
+              pois[poi].closestDeepPoint = [i0, j0];
+              pois[poi].closestDeepPointDepth = bathymetry[j0][i0];
+              closestDeepPointDistance = distance;
             }
-        });
+          }
+        }
+
+        const d = Math.max(pois[poi].depth, 1.0);
+        const d0 = pois[poi].closestDeepPointDepth;
+        pois[poi].originalPixel = pois[poi].pixel;
+        pois[poi].pixel = pois[poi].closestDeepPoint;
+        pois[poi].shallowCorrectionFactor = Math.pow(d0 / d, 0.25);
+      }
+    });
+  };
+
+  let storePOISValues = function() {
+    // save current time in minutes
+
+    // poisTime.push(simulationData.currentIterationTime);
+
+    // store water surface elevation at points of interest (POIs)
+
+    Object.keys(pois).forEach(function(poi) {
+      var pixelSurface = readFBOPixels(
+        wave.first.fbo,
+        pois[poi].pixel[0],
+        pois[poi].pixel[1],
+        1,
+        1
+      )[0];
+      pixelSurface = pixelSurface * pois[poi].shallowCorrectionFactor;
+      pois[poi].surface.push(pixelSurface);
+      pois[poi].time.push(discretization.dt * discretization.stepNumber);
+    });
+  };
+
+  let runSimulationStep = function() {
+    discretization.stepNumber++;
+
+    if (domain.equations == "dispersive") {
+      // choose dispersive solver
+      if (domain.coordinates == "cartesian") {
+        renderCartesianDispersiveProgram();
+      } else if (domain.coordinates == "spherical") {
+        renderDispersiveWaveEquation();
+      }
+    } else {
+      // choose non-dispersive solver
+      if (domain.coordinates == "cartesian") {
+        renderCartesianProgram();
+      } else if (domain.coordinates == "spherical") {
+        renderSphericalWaveEquation();
+      }
     }
 
-    let storePOISValues = function(){
-        
-        // save current time in minutes
+    renderMaxHeightsProgram();
 
-        // poisTime.push(simulationData.currentIterationTime);
+    storePOISValues();
+  };
 
-        // store water surface elevation at points of interest (POIs)
+  let setTimeStep = function(options) {
+    let hmax = Math.max.apply(
+      null,
+      bathymetry.array.map(row => {
+        return Math.max.apply(null, row);
+      })
+    );
 
-        Object.keys(pois).forEach(function(poi){
-            var pixelSurface = readFBOPixels(wave.first.fbo, pois[poi].pixel[0], pois[poi].pixel[1], 1, 1)[0];
-            pixelSurface = pixelSurface * pois[poi].shallowCorrectionFactor;
-            pois[poi].surface.push(pixelSurface);
-            pois[poi].time.push(discretization.dt*discretization.stepNumber);
-            
-        });
-    }
+    let cfl;
+    if (options.timeStep !== undefined) {
+      discretization.dt = options.timeStep;
+    } else {
+      /* If dt is not given use given or predefined cfl */
 
-    let runSimulationStep = function(){
-        discretization.stepNumber++;
-        
-        
-        if(domain.equations == 'dispersive'){
-            // choose dispersive solver
-            if(domain.coordinates == 'cartesian'){
-                renderCartesianDispersiveProgram();
-                
-            }
-            else if(domain.coordinates == 'spherical'){
-                renderDispersiveWaveEquation();                    
-            }
-        }
-        else{
-            // choose non-dispersive solver
-            if(domain.coordinates == 'cartesian'){
-                renderCartesianProgram();
-                
-            }
-            else if(domain.coordinates == 'spherical'){
-                renderSphericalWaveEquation();                    
-            }
-        }
-    
+      cfl = options.cfl === undefined ? 0.5 : options.cfl;
+      if (domain.coordinates == "cartesian") {
+        discretization.dt =
+          (cfl * Math.min(discretization.dx, discretization.dy)) /
+          Math.sqrt(hmax * 9.81);
+      } else if (domain.coordinates == "spherical") {
+        // let Rearth = 6378000.0;
+        let Rearth = 6378000;
+        let radPerDeg = 0.01745329252;
+        let radPerMin = 0.000290888208665721;
+        var latMax = Math.max(Math.abs(domain.ymax), Math.abs(domain.ymin)); //Math.max(Math.abs(ymin),Math.abs(ymax));
+        var dxReal =
+          Rearth *
+          Math.cos(latMax * radPerDeg) *
+          discretization.dlon *
+          radPerMin;
+        var dyReal = Rearth * discretization.dlat * radPerMin;
 
-
-        renderMaxHeightsProgram();
-
-        storePOISValues();
-              
-    }
-
-    let setTimeStep = function(options){
-        let hmax = Math.max.apply(null, 
-            bathymetry.array.map(
-                (row)=>{return Math.max.apply(null,row)}
-            )
-        );
-
-        let cfl;
-        if(options.timeStep !== undefined){
-            discretization.dt = options.timeStep;
-        }
-        else{
-            /* If dt is not given use given or predefined cfl */ 
-
-            cfl = options.cfl === undefined ? 0.5 : options.cfl;
-            if(domain.coordinates == 'cartesian'){
-                discretization.dt = cfl * Math.min(discretization.dx,discretization.dy)/Math.sqrt(hmax*9.81);
-            }
-            else if(domain.coordinates == 'spherical'){
-                // let Rearth = 6378000.0;
-                let Rearth = 6378000;
-                let radPerDeg = 0.01745329252;
-                let radPerMin = 0.000290888208665721;
-                var latMax = Math.max(Math.abs(domain.ymax),Math.abs(domain.ymin));//Math.max(Math.abs(ymin),Math.abs(ymax));
-                var dxReal = Rearth * Math.cos(latMax * radPerDeg) * discretization.dlon * radPerMin;
-                var dyReal = Rearth * discretization.dlat * radPerMin;
-    
-                var Dx = Rearth * discretization.dlon * radPerMin;
-                var Dy = Rearth * discretization.dlat * radPerMin;
-                var dt = Math.cos(latMax*radPerDeg) * Dy/Math.sqrt(9.81 * hmax);
-    
-                // let hmax = Math.max.apply(null, )
-                // discretization.dt = 0.25 * Math.min(dxReal, dyReal) / Math.sqrt(9.81 * hmax);
-                discretization.dt = cfl*dt;
-    
-            }
-        }
-
-        
-
-        // if(discretization.dt>15)
-        //     discretization.dt = 15;
+        var Dx = Rearth * discretization.dlon * radPerMin;
+        var Dy = Rearth * discretization.dlat * radPerMin;
+        var dt = (Math.cos(latMax * radPerDeg) * Dy) / Math.sqrt(9.81 * hmax);
 
         // let hmax = Math.max.apply(null, )
-        
+        // discretization.dt = 0.25 * Math.min(dxReal, dyReal) / Math.sqrt(9.81 * hmax);
+        discretization.dt = cfl * dt;
+      }
     }
 
-    let getSlabParameters = (lon, lat) => {
-        if(slab == undefined){
-            return;
-        }
+    // if(discretization.dt>15)
+    //     discretization.dt = 15;
 
-        let calcDistance = (p1,p2) =>{
-            return (p1[0]-p2[0])*(p1[0]-p2[0]) + (p1[1]-p2[1])*(p1[1]-p2[1]);
-        };
-        let xslab = slab['x'][0]>180? slab['x'][0]-360 : slab['x'][0];
+    // let hmax = Math.max.apply(null, )
+  };
 
-        let minDistance = calcDistance( [ xslab, slab['y'][0]], [lon,lat]);
-        let minDistanceLocation = 0;
-        for(let i = 1 ; i< slab['x'].length; i++){
-            xslab = slab['x'][i]>180? slab['x'][i]-360 : slab['x'][i];
-            let newMinDistance = calcDistance( [ xslab, slab['y'][i]], [lon,lat]);
-            if(newMinDistance < minDistance){
-                minDistance = newMinDistance;
-                minDistanceLocation = i;
-            }
-        }
-        return {
-            depth: slab['depth'][minDistanceLocation],
-            dip: slab['dip'][minDistanceLocation],
-            strike: slab['strike'][minDistanceLocation],
-            distance: minDistance,
-            minDistanceLocation: minDistanceLocation
-        }
+  let getSlabParameters = (lon, lat) => {
+    if (slab == undefined) {
+      return;
+    }
+
+    let calcDistance = (p1, p2) => {
+      return (
+        (p1[0] - p2[0]) * (p1[0] - p2[0]) + (p1[1] - p2[1]) * (p1[1] - p2[1])
+      );
     };
+    let xslab = slab["x"][0] > 180 ? slab["x"][0] - 360 : slab["x"][0];
 
-    let setEarthquake = ()=>{
-        if(earthquake.length>0){
-            for(let i = 0; i<earthquake.length; i++){
-                if(earthquake[i].lat !== undefined){
-                    earthquake[i].cn = earthquake[i].lat;
-                };
-                if(earthquake[i].lon !== undefined){
-                    earthquake[i].ce = earthquake[i].lon;
-                };
-                earthquake[i].U3 = 0.0;
-                
-                if(earthquake[i].rake === undefined){
-                    earthquake[i].rake = 90.0;
-                };
-
-                if(earthquake[i].reference === undefined){
-                    earthquake[i].reference = 'center';
-                };
-
-                if( earthquake[i].Mw != undefined && 
-                    !(earthquake[i].L != undefined && 
-                        earthquake[i].W != undefined && 
-                        earthquake[i].slip != undefined ) ){
-                    const LWslip = getLengthWidthSlip(earthquake[i].Mw)
-                    earthquake[i].L = LWslip.L;
-                    earthquake[i].W = LWslip.W;
-                    earthquake[i].slip = LWslip.slip;
-
-                    const slabInfo = getSlabParameters(earthquake[i].ce, earthquake[i].cn);
-                    if(slabInfo){
-                        earthquake[i].depth = -slabInfo.depth*1000;
-                        earthquake[i].dip = slabInfo.dip;
-                        earthquake[i].strike = slabInfo.strike;
-                    }
-                }
-            }   
-        }
-
+    let minDistance = calcDistance([xslab, slab["y"][0]], [lon, lat]);
+    let minDistanceLocation = 0;
+    for (let i = 1; i < slab["x"].length; i++) {
+      xslab = slab["x"][i] > 180 ? slab["x"][i] - 360 : slab["x"][i];
+      let newMinDistance = calcDistance([xslab, slab["y"][i]], [lon, lat]);
+      if (newMinDistance < minDistance) {
+        minDistance = newMinDistance;
+        minDistanceLocation = i;
+      }
     }
-
-    let initFBOs = function(){
-        const internalFormat = isWebGL2 ? gl.RGBA32F : gl.RGBA;
-        const format = gl.RGBA; 
-        const textype = gl.FLOAT;
-        let textureIdHeights1 = 2;
-        let textureIdHeights2 = 3;
-        let textureIdMaxHeights1 = 4;
-        let textureIdMaxHeights2 = 5;
-        let param = gl.NEAREST;
-
-        wave = createDoubleFBO(textureIdHeights1, textureIdHeights2, discretization.numberOfCells[0], discretization.numberOfCells[1], 
-            internalFormat, format, textype, param);
-        maxHeights = createDoubleFBO(textureIdMaxHeights1, textureIdMaxHeights2, discretization.numberOfCells[0], discretization.numberOfCells[1], 
-            internalFormat, format, textype, param);
-
-        if(initialSurface){
-            renderInitialProgram();
-        }
-        else if(earthquake.length>0){
-            renderEarthquake();
-        }
-        else if(asteroid){
-            renderAsteroidProgram();
-        }
-
-        renderMaxHeightsProgram();
-
-        renderDisplayProgram();
-    }
-    
-    let start = function(){
-
-        bathymetry.texture = createTextureFromMatrix (
-            bathymetry.array, bathymetry.textureId );
-
-        if(initialSurface != undefined){
-            
-            initialSurface.texture = createTextureFromMatrix (
-                initialSurface.array, initialSurface.textureId );
-
-                initialSurface = Object.assign(data.initialSurface, initialSurface);
-                if(data.initialSurface.cn === undefined || data.initialSurface.ce === undefined ||
-                    data.initialSurface.L === undefined || data.initialSurface.W === undefined){
-                        initialSurface.isSubrectangle = false;
-                }
-        }
-        
-        setTimeStep(data);
-
-        createShaders();
-
-        createBuffers();
-        
-        setEarthquake();
-
-        initFBOs();
-        
-        setPOIs();
-
-
-    }
-
-    start();
-
     return {
-        domain,
-        discretization,
-        bathymetry,
-        getCellBathymetry: (i,j) =>{
-            return exportBuffer(wave.first.fbo, 3, i, j, 1, 1);
-        },
-        getRectangleBathymetry: (iStart, jStart, iEnd, jEnd)=>{
-            let rectangle = exportBuffer(wave.first.fbo, 3, iStart, jStart, iEnd-iStart+1, jEnd - jStart+1);
-            rectangle = [... rectangle];
-            let matrixRectangle = [];
+      depth: slab["depth"][minDistanceLocation],
+      dip: slab["dip"][minDistanceLocation],
+      strike: slab["strike"][minDistanceLocation],
+      distance: minDistance,
+      minDistanceLocation: minDistanceLocation
+    };
+  };
 
-            while (rectangle.length > 0) matrixRectangle.push(rectangle.splice(0, iEnd-iStart+1));
-
-            return matrixRectangle;
-        },
-        get currentTime(){
-            return discretization.stepNumber * discretization.dt;
-        },
-        setTimeStep,
-        canvas,
-        get currentGridHeights(){
-            return exportBuffer(wave.first.fbo);
-        },
-        get currentMaximumHeights(){
-            return exportBuffer(maxHeights.first.fbo);
-        },
-        get currentArrivalTimes(){
-            return exportBuffer(maxHeights.first.fbo, 1)
-        },
-        pois,
-        runSimulationStep,
-        displayPColor: ()=>{renderDisplayProgram()},
-        displayOption,
-        set colors(newColors){
-            colormap.rgba = [... newColors].reduce((a,b)=>{
-                return a.concat(b);
-            });
-    let nextgrid = 0;
-    gl.uniform4fv(displayProgram.uniforms.colormap, new Float32Array(colormap.rgba));   
-        },
-        get colors(){
-            return colormap.rgba;
-        },
-        set earthquake(newEarthquake){
-            console.log(gl);
-            wave.clearBuffers();
-            earthquake = newEarthquake;
-            setEarthquake();
-            renderEarthquake();
-            renderDisplayProgram();
-            discretization.stepNumber = 0;
-
-        },
-
-        get earthquake(){
-            return Object.assign({},earthquake);
+  let setEarthquake = () => {
+    if (earthquake.length > 0) {
+      for (let i = 0; i < earthquake.length; i++) {
+        if (earthquake[i].lat !== undefined) {
+          earthquake[i].cn = earthquake[i].lat;
         }
+        if (earthquake[i].lon !== undefined) {
+          earthquake[i].ce = earthquake[i].lon;
+        }
+        earthquake[i].U3 = 0.0;
+
+        if (earthquake[i].rake === undefined) {
+          earthquake[i].rake = 90.0;
+        }
+
+        if (earthquake[i].reference === undefined) {
+          earthquake[i].reference = "center";
+        }
+
+        if (
+          earthquake[i].Mw != undefined &&
+          !(
+            earthquake[i].L != undefined &&
+            earthquake[i].W != undefined &&
+            earthquake[i].slip != undefined
+          )
+        ) {
+          const LWslip = getLengthWidthSlip(earthquake[i].Mw);
+          earthquake[i].L = LWslip.L;
+          earthquake[i].W = LWslip.W;
+          earthquake[i].slip = LWslip.slip;
+
+          const slabInfo = getSlabParameters(
+            earthquake[i].ce,
+            earthquake[i].cn
+          );
+          if (slabInfo) {
+            earthquake[i].depth = -slabInfo.depth * 1000;
+            earthquake[i].dip = slabInfo.dip;
+            earthquake[i].strike = slabInfo.strike;
+          }
+        }
+      }
+    }
+  };
+
+  let initFBOs = function() {
+    const internalFormat = isWebGL2 ? gl.RGBA32F : gl.RGBA;
+    const format = gl.RGBA;
+    const textype = gl.FLOAT;
+    let textureIdHeights1 = 2;
+    let textureIdHeights2 = 3;
+    let textureIdMaxHeights1 = 4;
+    let textureIdMaxHeights2 = 5;
+    let param = gl.NEAREST;
+
+    wave = createDoubleFBO(
+      textureIdHeights1,
+      textureIdHeights2,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1],
+      internalFormat,
+      format,
+      textype,
+      param
+    );
+    maxHeights = createDoubleFBO(
+      textureIdMaxHeights1,
+      textureIdMaxHeights2,
+      discretization.numberOfCells[0],
+      discretization.numberOfCells[1],
+      internalFormat,
+      format,
+      textype,
+      param
+    );
+
+    if (initialSurface) {
+      renderInitialProgram();
+    } else if (earthquake.length > 0) {
+      renderEarthquake();
+    } else if (asteroid) {
+      renderAsteroidProgram();
     }
 
-}
+    renderMaxHeightsProgram();
 
-export {Model};
+    renderDisplayProgram();
+  };
+
+  let start = function() {
+    bathymetry.texture = createTextureFromMatrix(
+      bathymetry.array,
+      bathymetry.textureId
+    );
+
+    if (initialSurface != undefined) {
+      initialSurface.texture = createTextureFromMatrix(
+        initialSurface.array,
+        initialSurface.textureId
+      );
+
+      initialSurface = Object.assign(data.initialSurface, initialSurface);
+      if (
+        data.initialSurface.cn === undefined ||
+        data.initialSurface.ce === undefined ||
+        data.initialSurface.L === undefined ||
+        data.initialSurface.W === undefined
+      ) {
+        initialSurface.isSubrectangle = false;
+      }
+    }
+
+    setTimeStep(data);
+
+    createShaders();
+
+    createBuffers();
+
+    setEarthquake();
+
+    initFBOs();
+
+    setPOIs();
+  };
+
+  start();
+
+  return {
+    domain,
+    discretization,
+    bathymetry,
+    getCellBathymetry: (i, j) => {
+      return exportBuffer(wave.first.fbo, 3, i, j, 1, 1);
+    },
+    getRectangleBathymetry: (iStart, jStart, iEnd, jEnd) => {
+      let rectangle = exportBuffer(
+        wave.first.fbo,
+        3,
+        iStart,
+        jStart,
+        iEnd - iStart + 1,
+        jEnd - jStart + 1
+      );
+      rectangle = [...rectangle];
+      let matrixRectangle = [];
+
+      while (rectangle.length > 0)
+        matrixRectangle.push(rectangle.splice(0, iEnd - iStart + 1));
+
+      return matrixRectangle;
+    },
+    get currentTime() {
+      return discretization.stepNumber * discretization.dt;
+    },
+    setTimeStep,
+    canvas,
+    get currentGridHeights() {
+      return exportBuffer(wave.first.fbo);
+    },
+    get currentMaximumHeights() {
+      return exportBuffer(maxHeights.first.fbo);
+    },
+    get currentArrivalTimes() {
+      return exportBuffer(maxHeights.first.fbo, 1);
+    },
+    pois,
+    runSimulationStep,
+    displayPColor: () => {
+      renderDisplayProgram();
+    },
+    displayOption,
+    set colors(newColors) {
+      colormap.rgba = [...newColors].reduce((a, b) => {
+        return a.concat(b);
+      });
+      let nextgrid = 0;
+      gl.uniform4fv(
+        displayProgram.uniforms.colormap,
+        new Float32Array(colormap.rgba)
+      );
+    },
+    get colors() {
+      return colormap.rgba;
+    },
+    set earthquake(newEarthquake) {
+      console.log(gl);
+      wave.clearBuffers();
+      earthquake = newEarthquake;
+      setEarthquake();
+      renderEarthquake();
+      renderDisplayProgram();
+      discretization.stepNumber = 0;
+    },
+
+    get earthquake() {
+      return Object.assign({}, earthquake);
+    }
+  };
+};
+
+export { Model };
