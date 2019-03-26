@@ -7,27 +7,29 @@
       xmax: 179.67499999999998,
       ymin: -79.991666666666646,
       ymax: 79.841666666666654,
-      waveWidth: parseInt(2159/2),
-      waveHeight: parseInt(960/2),
-      coordinates: 'spherical',
-      bathymetry: '../../assets/bathymetry.png',
+      waveWidth: parseInt(2159 / 2),
+      waveHeight: parseInt(960 / 2),
+      coordinates: "spherical",
+      bathymetry: "../../assets/bathymetry.png",
       bathymetryMetadata: {
         zmin: -6709,
         zmax: 10684
       },
       isPeriodic: true,
-      earthquake: [{
-        ce: -73.407,   //centroid N coordinate, e
-        cn: -38.143,
-        Mw: 9.0,
-      }],
+      earthquake: [
+        {
+          ce: -73.407, //centroid N coordinate, e
+          cn: -38.143,
+          Mw: 9.0
+        }
+      ],
       slab: slab
     };
 
     const output = {
       stopTime: 25 * 60 * 60,
-      displayWidth: 215*5,
-      displayHeight: 96*5
+      displayWidth: 215 * 5,
+      displayHeight: 96 * 5
     };
 
     const lifeCycle = {
@@ -41,9 +43,7 @@
         }
         return true;
       }
-
     };
     const nami = new Nami(scenario, output, lifeCycle);
-
   </script>
 </body>

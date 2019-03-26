@@ -1,6 +1,6 @@
 import { getArrayFromImage } from "./FileUtils";
 
-const Reader = function(data) {
+const Reader = function(data, outputData) {
   let loadBathymetry = function(resolve) {
     if (typeof data.bathymetry == "object") {
       // assume bathymetry is an array
@@ -113,39 +113,42 @@ const Reader = function(data) {
 
   // discretization
   let discretization = {
-    numberOfCells : [data.waveWidth, data.waveHeight],
+    numberOfCells: [data.waveWidth, data.waveHeight],
     dt: undefined,
-    stepNumber : 0
+    stepNumber: 0
   };
 
-  if(domain.coordinates == 'cartesian'){
-      discretization.dx = (domain.xmax-domain.xmin)/(discretization.numberOfCells[0]-1)
-      discretization.dy = (domain.ymax-domain.ymin)/(discretization.numberOfCells[1]-1);
-  }
-  else if(domain.coordinates == 'spherical'){
-      domain.xmin = domain.xmin;
-      domain.xmax = domain.xmax;
-      discretization.dlon = 60*(domain.xmax-domain.xmin)/(discretization.numberOfCells[0]-1);
-      discretization.dlat = 60*(domain.ymax-domain.ymin)/(discretization.numberOfCells[1]-1);
+  if (domain.coordinates == "cartesian") {
+    discretization.dx =
+      (domain.xmax - domain.xmin) / (discretization.numberOfCells[0] - 1);
+    discretization.dy =
+      (domain.ymax - domain.ymin) / (discretization.numberOfCells[1] - 1);
+  } else if (domain.coordinates == "spherical") {
+    domain.xmin = domain.xmin;
+    domain.xmax = domain.xmax;
+    discretization.dlon =
+      (60 * (domain.xmax - domain.xmin)) /
+      (discretization.numberOfCells[0] - 1);
+    discretization.dlat =
+      (60 * (domain.ymax - domain.ymin)) /
+      (discretization.numberOfCells[1] - 1);
   }
 
-  if(domain.equations === undefined){
-      domain.equations = 'linear';
+  if (domain.equations === undefined) {
+    domain.equations = "linear";
   }
 
   // slab
 
   const slab = data.slab;
-    
+
   // bathymetry
   let bathymetry = {
-      array: undefined,
-      image: undefined,
-      textureId: 0,
-      texture: undefined, // to be loaded at start()
+    array: undefined,
+    image: undefined,
+    textureId: 0,
+    texture: undefined // to be loaded at start()
   };
-
-  let newData = {};
 
   bathymetry.array = new Promise((resolve, reject) => {
     loadBathymetry(resolve);
@@ -162,7 +165,7 @@ const Reader = function(data) {
     discretization,
     bathymetry,
     initialCondition,
-    slab 
+    slab
   };
 };
 
