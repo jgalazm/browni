@@ -1,5 +1,5 @@
 import { Controller } from "./Controller";
-import { Model } from "./Model";
+import { Model } from "./Model/Model";
 import Reader from "./Reader/Reader";
 
 let Nami = function(data, output, lifeCycle) {

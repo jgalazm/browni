@@ -44,8 +44,6 @@ let Model = function(data, output) {
     colormap
   } = data;
 
-
-
   /* 
         Start WebGL context
 
