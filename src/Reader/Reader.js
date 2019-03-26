@@ -4,9 +4,6 @@ const Reader = function(data, outputData) {
   let loadBathymetry = function(resolve) {
     if (typeof data.bathymetry == "object") {
       // assume bathymetry is an array
-      data.bathymetry = {
-        array: data.bathymetry
-      };
       resolve(data.bathymetry);
     } else if (
       data.bathymetry.slice(-3) === "png" ||
@@ -147,9 +144,33 @@ const Reader = function(data, outputData) {
     array: undefined,
     image: undefined,
     textureId: 0,
-    texture: undefined // to be loaded at start()
+    texture: undefined, // to be loaded at start()
+    extent: {
+      xmin: domain.xmin,
+      xmax: domain.xmax,
+      ymin: domain.ymin,
+      ymax: domain.ymax
+    }
   };
 
+  if (data.bathymetryExtent) {
+    bathymetry.extent = {
+      xmin: data.bathymetryExtent.xmin,
+      xmax: data.bathymetryExtent.xmax,
+      ymin: data.bathymetryExtent.ymin,
+      ymax: data.bathymetryExtent.ymax
+    };
+  }
+
+  if (
+    domain.xmin < bathymetry.extent.xmin ||
+    domain.ymin < bathymetry.extent.ymin ||
+    domain.xmax > bathymetry.extent.xmax ||
+    domain.ymax > bathymetry.extent.ymax
+  ) {
+    throw `Bathymetry extent should include domain extent 
+           domain:${domain}, bathymetry.extent:${bathymetry.extent}`;
+  }
   bathymetry.array = new Promise((resolve, reject) => {
     loadBathymetry(resolve);
   });
@@ -160,17 +181,16 @@ const Reader = function(data, outputData) {
     loadInitialCondition(resolve);
   });
 
-
   const pcolorDisplay = {
     width: outputData.displayWidth,
     height: outputData.displayHeight
   };
 
-  const displayOption = outputData.displayOption ? outputData.displayOption : "heights";
-
+  const displayOption = outputData.displayOption
+    ? outputData.displayOption
+    : "heights";
 
   const pois = output.pois ? output.pois : {};
-
 
   const cmax = 0.1;
   const cmin = -0.1;
@@ -214,14 +234,13 @@ const Reader = function(data, outputData) {
     ]
   };
 
-  let colormap = output.colormap !== undefined ? output.colormap : defaultColormap;
-
+  let colormap =
+    output.colormap !== undefined ? output.colormap : defaultColormap;
 
   // flatten the array
   colormap.rgba = colormap.rgba.reduce((a, b) => {
     return a.concat(b);
   });
-
 
   return {
     domain,

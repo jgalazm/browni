@@ -241,7 +241,11 @@ let Model = function(data, output) {
             uniform float xmax;
             uniform float ymin;
             uniform float ymax;
-            
+            uniform float bathymetry_xmin;
+            uniform float bathymetry_ymin;
+            uniform float bathymetry_xmax;
+            uniform float bathymetry_ymax;
+
             uniform sampler2D previousTexture;
             uniform float L;
             uniform float W;
@@ -534,8 +538,11 @@ let Model = function(data, output) {
                     value  = okada(pos.g, pos.r, depth, strike, dip, L, W, rake, slip, U3);
 
                 }
-                
-                float bathymetry = texture2D(bathymetry, vUv).r;
+
+                float u_bathymetry = (e - bathymetry_xmin)/(bathymetry_xmax - bathymetry_xmin);
+                float v_bathymetry = (n - bathymetry_ymin)/(bathymetry_ymax - bathymetry_ymin);
+
+                float bathymetry = texture2D(bathymetry, vec2(u_bathymetry, v_bathymetry)).r;
                 value = value*step(0.0,bathymetry);
                 bathymetry = max(0.0, bathymetry);
 
@@ -1988,6 +1995,10 @@ let Model = function(data, output) {
     gl.uniform1f(okadaProgram.uniforms.xmax, domain.xmax);
     gl.uniform1f(okadaProgram.uniforms.ymin, domain.ymin);
     gl.uniform1f(okadaProgram.uniforms.ymax, domain.ymax);
+    gl.uniform1f(okadaProgram.uniforms.bathymetry_xmin, bathymetry.extent.xmin);
+    gl.uniform1f(okadaProgram.uniforms.bathymetry_ymin, bathymetry.extent.ymin);
+    gl.uniform1f(okadaProgram.uniforms.bathymetry_xmax, bathymetry.extent.xmax);
+    gl.uniform1f(okadaProgram.uniforms.bathymetry_ymax, bathymetry.extent.ymax);
 
     gl.uniform1f(okadaProgram.uniforms.L, finiteFault.L);
     gl.uniform1f(okadaProgram.uniforms.W, finiteFault.W);

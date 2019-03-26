@@ -2,15 +2,30 @@
   <script src="../../build/nami.js"></script>
   <script src="../../assets/nami_slabs.js"></script>
   <script>
+
+    // const xmin = -178;
+    // const xmax = 0;
+    // const ymin = -79.99;
+    // const ymax = 79.84;
+
+    const xmin = -89;
+    const ymin = -75;
+    const xmax = -60;
+    const ymax = -15;
+    const ds = 0.33/5;
+    const nx = parseInt((xmax-xmin)/ds);
+    const ny = parseInt((ymax-ymin)/ds);
+
     const scenario = {
-      xmin: -179.99166666666667,
-      xmax: 179.67499999999998,
-      ymin: -79.991666666666646,
-      ymax: 79.841666666666654,
-      waveWidth: parseInt(2159 / 2),
-      waveHeight: parseInt(960 / 2),
+      xmin: xmin,
+      xmax: xmax,
+      ymin: ymin,
+      ymax: ymax,
+      waveWidth: ny,
+      waveHeight: nx,
       coordinates: "spherical",
       bathymetry: "../../assets/bathymetry.png",
+      isPeriodic: false,
       bathymetryExtent: {
         xmin: -179.99166666666667,
         xmax: 179.67499999999998,
@@ -33,8 +48,8 @@
 
     const output = {
       stopTime: 25 * 60 * 60,
-      displayWidth: 215 * 5,
-      displayHeight: 96 * 5
+      displayWidth: nx,
+      displayHeight: ny
     };
 
     const lifeCycle = {
