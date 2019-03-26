@@ -16,69 +16,10 @@ let Model = function(data, output){
         dispersiveMassStepProgram, dispersiveMomentumStepProgram,
         maxHeightsProgram, displayProgram  ;
 
-    let domain, bathymetry, discretization, initialSurface, earthquake, asteroid;
     let wave, maxHeights, pcolorDisplay;
     let displayOption, pois, colormap;
-    let slab;
-
-   
-    // domain
-    domain = {
-        equations: data.equations,
-        coordinates : data.coordinates,
-        xmin : data.xmin,
-        xmax : data.xmax,
-        ymin : data.ymin,
-        ymax : data.ymax,
-      isPeriodic: data.isPeriodic !== undefined ? data.isPeriodic: 0
-    };
-    
-    // bathymetry
-    bathymetry = {
-        array: data.bathymetry.array,
-        image: data.bathymetry.image,
-        textureId: 0,
-        texture: undefined, // to be loaded at start()
-    };
-
-    // discretization
-    discretization = {
-        numberOfCells : [data.waveWidth, data.waveHeight],
-        dt: undefined,
-        stepNumber : 0
-    };
-
-    if(domain.coordinates == 'cartesian'){
-        discretization.dx = (domain.xmax-domain.xmin)/(discretization.numberOfCells[0]-1)
-        discretization.dy = (domain.ymax-domain.ymin)/(discretization.numberOfCells[1]-1);
-    }
-    else if(domain.coordinates == 'spherical'){
-        domain.xmin = domain.xmin;
-        domain.xmax = domain.xmax;
-        discretization.dlon = 60*(domain.xmax-domain.xmin)/(discretization.numberOfCells[0]-1);
-        discretization.dlat = 60*(domain.ymax-domain.ymin)/(discretization.numberOfCells[1]-1);
-    }
-
-    if(domain.equations === undefined){
-        domain.equations = 'linear';
-    }
-
-    // Initial condition
-    earthquake = [];
-    if(data.initialSurface){
-        initialSurface = {
-            array: data.initialSurface.array,
-            textureId : 1,
-            texture : undefined
-        };
-    }
-    else if(data.earthquake){
-        earthquake = data.earthquake;
-    }
-    else if(data.asteroid){
-        asteroid = Object.assign({}, data.asteroid);
-    }
-            
+         
+    let {domain, bathymetry, discretization, initialSurface, earthquake, asteroid, slab} = data;
 
     pcolorDisplay = {
         width : output.displayWidth,
@@ -134,9 +75,6 @@ let Model = function(data, output){
         return a.concat(b);
     });
 
-    /* misc data */
-
-    slab = data.slab;
 
     /* 
         Start WebGL context
@@ -2467,6 +2405,7 @@ let Model = function(data, output){
 
         bathymetry.texture = createTextureFromMatrix (
             bathymetry.array, bathymetry.textureId );
+        debugger;
 
         if(initialSurface != undefined){
             

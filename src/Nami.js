@@ -6,13 +6,13 @@ let Nami = function(data, output, lifeCycle){
 
     let model, controller;
 
-    let init = () => {
+    let init = (newData) => {
         
         if(lifeCycle.dataWasParsed){
-            lifeCycle.dataWasParsed(data);
+            lifeCycle.dataWasParsed(newData);
         }
         
-        this.model = new Model(data, output);
+        this.model = new Model(newData, output);
 
         if (lifeCycle.dataWasLoaded !== undefined){
             lifeCycle.dataWasLoaded(this.model);
@@ -25,16 +25,13 @@ let Nami = function(data, output, lifeCycle){
     }
 
     const newData = new Reader(data);
-    Promise.all([newData.bathymetry, newData.initialCondition]).then( values=>{
-
+    Promise.all([newData.bathymetry.array, newData.initialCondition]).then( values=>{
         const [bathyArray, earthquake] = values;
 
-        data.bathymetry = {
-            array : bathyArray 
-        }
+        newData.bathymetry.array = bathyArray;
 
-        data.earthquake = earthquake;
-        init();
+        newData.earthquake = earthquake;
+        init(newData);
     })
 
     
