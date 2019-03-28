@@ -1,4 +1,4 @@
-import { getArrayFromImage } from "./FileUtils";
+import { getArrayFromImage, getArrayFromFile, getStringFromFile } from "./FileUtils";
 
 const Reader = function(data, outputData) {
   let loadBathymetry = function(resolve) {
