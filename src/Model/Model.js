@@ -889,14 +889,17 @@ let Model = function(data, output) {
                 //j=0
                 float k = 1.0;
                 if (vUv.y <= k*texel.y){
-                    eta = sqrt(Nij*Nij+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
+                    // eta = sqrt(Nij*Nij+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
+                    eta = sqrt(Nij*Nij+Mij*Mij)/c;
+
                     if (Nij>0.0){
                         eta = -eta;
-                    }            
+                    }
                 }
             
                 if (vUv.y >= 1.0-k*texel.y){
-                    eta = sqrt(Nijm*Nijm+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
+                    // eta = sqrt(Nijm*Nijm+0.25*(Mij+Mijm)*(Mij+Mijm))/c;
+                    eta = sqrt(Nijm*Nijm + Mijm*Mijm)/c;
                     if (Nijm<0.0){
                         eta = -eta;
                     }
