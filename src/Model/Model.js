@@ -889,8 +889,7 @@ let Model = function(data, output) {
                 //j=0
                 float k = 1.0;
                 if (vUv.y <= k*texel.y){
-                    // eta = sqrt(Nij*Nij+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
-                    eta = sqrt(Nij*Nij+Mij*Mij)/c;
+                    eta = sqrt(Nij*Nij+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
 
                     if (Nij>0.0){
                         eta = -eta;
@@ -948,6 +947,10 @@ let Model = function(data, output) {
                     if (Nijm<0.0){
                         eta = -eta;
                     }
+                }
+
+                if(abs(eta)>1.0){
+                  eta = 0.0;
                 }
                 
                 return eta;
