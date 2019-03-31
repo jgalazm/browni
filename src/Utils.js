@@ -1,4 +1,4 @@
-export const genericVertexshaderString = `
+export const genericVertexShaderString = `
     precision highp  float;
     attribute vec2 inPosition;
 

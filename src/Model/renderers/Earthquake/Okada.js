@@ -1,6 +1,6 @@
 import {
   createShaderProgram,
-  genericVertexshaderString,
+  genericVertexShaderString,
   compileShader,
   renderFrameBuffer
 } from "../../../Utils";
@@ -14,7 +14,7 @@ export default function Okada(gl) {
   const vertexShader = compileShader(
     gl,
     gl.VERTEX_SHADER,
-    genericVertexshaderString
+    genericVertexShaderString
   );
 
   const okadaProgram = createShaderProgram(gl, vertexShader, okadaShader);
