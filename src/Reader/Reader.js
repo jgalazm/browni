@@ -124,6 +124,10 @@ const Reader = function(data, outputData) {
     stepNumber: 0
   };
 
+  if (domain.coordinates === undefined){
+    domain.coordinates = "spherical";
+  }
+
   if (domain.coordinates == "cartesian") {
     discretization.dx =
       (domain.xmax - domain.xmin) / (discretization.numberOfCells[0] - 1);
