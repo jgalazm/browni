@@ -1,39 +1,31 @@
 import { getArrayFromImage, getArrayFromFile, getStringFromFile } from "./FileUtils";
 
 const Reader = function(data, outputData) {
-  let loadBathymetry = function(resolve) {
-    if (typeof data.bathymetry == "object") {
+  let loadBathymetry = function(resolve, bathymetryInput, bathymetryMetadata, binaryBathymetry) {
+    if (typeof bathymetryInput == "object") {
       // assume bathymetry is an array
-      resolve(data.bathymetry);
+      resolve(bathymetryInput);
     } else if (
-      data.bathymetry.slice(-3) === "png" ||
-      data.bathymetry.slice(-3) === "jpg"
+      bathymetryInput.slice(-3) === "png" ||
+      bathymetryInput.slice(-3) === "jpg"
     ) {
-      if (!data.bathymetryMetadata) {
+      if (!bathymetryMetadata) {
         throw new Error(
           "Must define data.bathymetryMetadata when using image format bathymetry"
         );
       }
       let bathymetryImage = new Image();
       bathymetryImage.onload = () => {
-        data.bathymetry = {
-          array: getArrayFromImage(bathymetryImage, data.bathymetryMetadata)
-        };
-
-        resolve(data.bathymetry.array);
+        resolve(getArrayFromImage(bathymetryImage, bathymetryMetadata));
       };
-      bathymetryImage.src = data.bathymetry;
+      bathymetryImage.src = bathymetryInput;
     } else {
       getArrayFromFile(
-        data.bathymetry,
+        bathymetryInput,
         array => {
-          data.bathymetry = {
-            array: array
-          };
-
-          resolve(data.bathymetry.array);
+          resolve(array);
         },
-        data.binaryBathymetry ? "binary" : "ascii"
+        binaryBathymetry ? "binary" : "ascii"
       );
     }
   };
@@ -140,6 +132,7 @@ const Reader = function(data, outputData) {
   const slab = data.slab;
 
   // bathymetry
+
   let bathymetry = {
     array: undefined,
     image: undefined,
@@ -172,7 +165,7 @@ const Reader = function(data, outputData) {
            domain:${domain}, bathymetry.extent:${bathymetry.extent}`;
   }
   bathymetry.array = new Promise((resolve, reject) => {
-    loadBathymetry(resolve);
+    loadBathymetry(resolve, data.bathymetry, data.bathymetryMetadata, data.binaryBathymetry);
   });
 
   // initial condition
