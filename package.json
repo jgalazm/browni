@@ -1,14 +1,14 @@
 {
-  "name": "namigl",
+  "name": "namijs",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Tsunami simulations on the web browser using WebGL",
+  "main": "build/nami.js",
   "scripts": {
     "build": "rollup -c",
     "test": "jest"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "José Galaz (jgalazm.github.io)",
+  "license": "MIT",
   "devDependencies": {
     "@babel/cli": "^7.2.3",
     "@babel/core": "^7.3.3",
@@ -18,5 +18,23 @@
     "mocha": "^5.1.0",
     "rollup": "^0.57.1",
     "xhr-mock": "^2.4.1"
-  }
+  },
+  "directories": {
+    "example": "examples"
+  },
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/nami_repos/nami.git"
+  },
+  "keywords": [
+    "webgl",
+    "tsunami",
+    "simulator",
+    "gpgpu"
+  ],
+  "bugs": {
+    "url": "https://gitlab.com/nami_repos/nami/issues"
+  },
+  "homepage": "https://gitlab.com/nami_repos/nami#README"
 }
