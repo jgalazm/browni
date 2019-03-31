@@ -22,13 +22,16 @@ let Nami = function(data, output, lifeCycle) {
   };
 
   const newData = new Reader(data, output);
-  Promise.all([newData.bathymetry.array, newData.initialCondition]).then(
+  Promise.all([newData.bathymetry.array, newData.initialCondition, newData.slab]).then(
     values => {
-      const [bathyArray, earthquake] = values;
+      const [bathyArray, earthquake, slab] = values;
 
       newData.bathymetry.array = bathyArray;
 
       newData.earthquake = earthquake;
+
+      newData.slab = slab;
+      
       init(newData);
     }
   );

@@ -150,7 +150,16 @@ const Reader = function(data, outputData) {
 
   // slab
 
-  const slab = data.slab;
+  let slab = new Promise( (resolve, reject) => {
+    if(data.slab) {
+      resolve(data.slab);
+      return;
+    }
+
+    fetch("/assets/SlabModels.json").then( response => {
+      resolve(response.json());
+    })
+  });
 
   // bathymetry
   let bathymetry = {
