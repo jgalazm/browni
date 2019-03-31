@@ -122,7 +122,7 @@ const Reader = function(data, outputData) {
       (60 * (domain.ymax - domain.ymin)) /
       (discretization.numberOfCells[1] - 1);
   }
-
+  isPeriodic
   if (domain.equations === undefined) {
     domain.equations = "linear";
   }
@@ -132,7 +132,6 @@ const Reader = function(data, outputData) {
   const slab = data.slab;
 
   // bathymetry
-
   let bathymetry = {
     array: undefined,
     image: undefined,
@@ -164,8 +163,19 @@ const Reader = function(data, outputData) {
     throw `Bathymetry extent should include domain extent 
            domain:${domain}, bathymetry.extent:${bathymetry.extent}`;
   }
+  
+  let bathymetryInput = data.bathymetry; 
+  let bathymetryMetadata = data.bathymetryMetadata;
+  if( data.bathymetry === undefined){
+    bathymetryInput = '/assets/bathymetry.png'
+    bathymetryMetadata = {
+      zmin: -6709,
+      zmax: 10684
+    };
+  }
+
   bathymetry.array = new Promise((resolve, reject) => {
-    loadBathymetry(resolve, data.bathymetry, data.bathymetryMetadata, data.binaryBathymetry);
+    loadBathymetry(resolve, bathymetryInput, bathymetryMetadata, data.binaryBathymetry);
   });
 
   // initial condition
