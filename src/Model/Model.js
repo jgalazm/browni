@@ -890,13 +890,15 @@ let Model = function(data, output) {
                 float k = 1.0;
                 if (vUv.y <= k*texel.y){
                     eta = sqrt(Nij*Nij+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
+
                     if (Nij>0.0){
                         eta = -eta;
-                    }            
+                    }
                 }
             
                 if (vUv.y >= 1.0-k*texel.y){
-                    eta = sqrt(Nijm*Nijm+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
+                    // eta = sqrt(Nijm*Nijm+0.25*(Mij+Mijm)*(Mij+Mijm))/c;
+                    eta = sqrt(Nijm*Nijm + Mijm*Mijm)/c;
                     if (Nijm<0.0){
                         eta = -eta;
                     }
@@ -945,6 +947,10 @@ let Model = function(data, output) {
                     if (Nijm<0.0){
                         eta = -eta;
                     }
+                }
+
+                if(abs(eta)>1.0){
+                  eta = 0.0;
                 }
                 
                 return eta;
@@ -2389,20 +2395,21 @@ let Model = function(data, output) {
 
     if (Object.keys(pois).length === 0) return;
 
-    let bathymetryTemp = exportBuffer(
-      wave.first.fbo,
-      3,
-      0,
-      0,
-      data.waveWidth,
-      data.waveHeight
-    );
-    bathymetryTemp = [...bathymetryTemp];
 
-    let bathymetry = [];
+    // let bathymetryTemp = exportBuffer(
+    //   wave.first.fbo,
+    //   3,
+    //   0,
+    //   0,
+    //   data.waveWidth,
+    //   data.waveHeight
+    // );
+    // bathymetryTemp = [...bathymetryTemp];
 
-    while (bathymetryTemp.length > 0)
-      bathymetry.push(bathymetryTemp.splice(0, data.waveWidth));
+    // let bathymetry = [];
+
+    // while (bathymetryTemp.length > 0)
+    //   bathymetry.push(bathymetryTemp.splice(0, data.waveWidth));
 
     Object.keys(pois).forEach(function(poi) {
       const dlon = discretization.dlon;
@@ -2424,39 +2431,39 @@ let Model = function(data, output) {
 
       // if depth is provided and is shallow then use it, otherwise get it from the matrix
       // the texture is read in [j][i] order
-      pois[poi].depth =
-        pois[poi].depth && pois[poi].depth < 100
-          ? pois[poi].depth
-          : bathymetry[j][i];
+      // pois[poi].depth =
+      //   pois[poi].depth && pois[poi].depth < 100
+      //     ? pois[poi].depth
+      //     : bathymetry[j][i];
 
-      pois[poi].shallowCorrectionFactor = 1;
-      pois[poi].closestDeepPoint = [];
-      pois[poi].closestDeepPointDepth = undefined;
+      // pois[poi].shallowCorrectionFactor = 1;
+      // pois[poi].closestDeepPoint = [];
+      // pois[poi].closestDeepPointDepth = undefined;
 
       // if point is in shallow water look for closest point in deep water:
-      let closestDeepPointDistance = Infinity;
-      if (pois[poi].depth <= 100) {
-        console.log("shallow poi:", poi);
-        for (let j0 = 0; j0 < bathymetry.length; j0++) {
-          for (let i0 = 0; i0 < bathymetry[0].length; i0++) {
-            const distance = (i0 - i) * (i0 - i) + (j0 - j) * (j0 - j); // assumes uniform cartesian grid
-            if (
-              bathymetry[j0][i0] > 100.0 &&
-              distance < closestDeepPointDistance
-            ) {
-              pois[poi].closestDeepPoint = [i0, j0];
-              pois[poi].closestDeepPointDepth = bathymetry[j0][i0];
-              closestDeepPointDistance = distance;
-            }
-          }
-        }
+      // let closestDeepPointDistance = Infinity;
+      // if (pois[poi].depth <= 100) {
+      //   console.log("shallow poi:", poi);
+      //   for (let j0 = 0; j0 < bathymetry.length; j0++) {
+      //     for (let i0 = 0; i0 < bathymetry[0].length; i0++) {
+      //       const distance = (i0 - i) * (i0 - i) + (j0 - j) * (j0 - j); // assumes uniform cartesian grid
+      //       if (
+      //         bathymetry[j0][i0] > 100.0 &&
+      //         distance < closestDeepPointDistance
+      //       ) {
+      //         pois[poi].closestDeepPoint = [i0, j0];
+      //         pois[poi].closestDeepPointDepth = bathymetry[j0][i0];
+      //         closestDeepPointDistance = distance;
+      //       }
+      //     }
+      //   }
 
-        const d = Math.max(pois[poi].depth, 1.0);
-        const d0 = pois[poi].closestDeepPointDepth;
-        pois[poi].originalPixel = pois[poi].pixel;
-        pois[poi].pixel = pois[poi].closestDeepPoint;
-        pois[poi].shallowCorrectionFactor = Math.pow(d0 / d, 0.25);
-      }
+      //   const d = Math.max(pois[poi].depth, 1.0);
+      //   const d0 = pois[poi].closestDeepPointDepth;
+      //   pois[poi].originalPixel = pois[poi].pixel;
+      //   pois[poi].pixel = pois[poi].closestDeepPoint;
+      //   pois[poi].shallowCorrectionFactor = Math.pow(d0 / d, 0.25);
+      // }
     });
   };
 
