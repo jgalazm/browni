@@ -101,8 +101,25 @@ const Reader = function(data, outputData) {
   };
 
   // discretization
+  let [nx,ny] = [-1, -1];
+  if(data.gridSize !== undefined){
+    nx = (domain.xmax-domain.xmin)/gridSize + 1;
+    ny = (domain.ymax-domain.ymin)/gridSize + 1;
+  }
+  else if( data.waveWidth !== undefined && data.waveHeight !== undefined){
+    [nx,ny] = [data.waveWidth, data.waveHeight];
+  }
+  else if(data.bathymetry === undefined){
+    // 20 minutes resolution, 1080 x 480 grid for the whole globe
+    nx = (domain.xmax-domain.xmin)*3 + 1;
+    ny = (domain.ymax-domain.ymin)*3 + 1;
+  }
+  else{
+    throw "Cannot determine grid size from input";
+  }
+
   let discretization = {
-    numberOfCells: [data.waveWidth, data.waveHeight],
+    numberOfCells: [nx, ny],
     dt: undefined,
     stepNumber: 0
   };
