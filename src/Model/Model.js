@@ -1,5 +1,6 @@
 import { getLengthWidthSlip } from "./Earthquake";
 import Earthquake from './renderers/Earthquake/Earthquake';
+import SphericalShallowWater from "./renderers/SphericalShallowWater/SphericalShallowWater";
 
 let Model = function(data, output) {
   let gl, isWebGL2;
@@ -11,8 +12,6 @@ let Model = function(data, output) {
     cartesianDispersiveMomentumShader,
     dispersiveMassStepShader,
     dispersiveMomentumStepShader,
-    sphericalMassStepShader,
-    sphericalMomentumStepShader,
     maxHeightsShader,
     displayShader;
 
@@ -21,8 +20,6 @@ let Model = function(data, output) {
     cartesianWaveProgram,
     cartesianDispersiveMassProgram,
     cartesianDispersiveMomentumProgram,
-    sphericalMassStepProgram,
-    sphericalMomentumStepProgram,
     dispersiveMassStepProgram,
     dispersiveMomentumStepProgram,
     maxHeightsProgram,
@@ -82,7 +79,8 @@ let Model = function(data, output) {
     domain
   };
 
-  let earthquakeModel = new Earthquake(gl);
+  const earthquakeModel = new Earthquake(gl);
+  const sphericalShallowWaterModel = new SphericalShallowWater(gl);
 
   /*
         WebGL tools
@@ -505,344 +503,6 @@ let Model = function(data, output) {
                 
                 gl_FragColor  = vec4(eta2ij, M2ij, N2ij, hij);
             }   
-        `
-    );
-
-    sphericalMassStepShader = compileShader(
-      gl.FRAGMENT_SHADER,
-      `
-            precision highp float;
-
-            varying vec2 vUv;
-            uniform sampler2D u0; 
-            uniform vec2 texel; 
-
-            uniform float dlon;
-            uniform float dlat;
-            uniform float dt;
-            uniform float xmin; 
-            uniform float xmax;
-            uniform float ymin;
-            uniform float ymax;
-            uniform int isPeriodic;
-
-            const float rad_min = 0.000290888208665721; 
-            const float rad_deg = 0.01745329252;
-            const float cori_w = 7.2722e-5;
-            const float gx = 1e-5;
-            const float g = 9.81;
-            const float Rearth = 6378000.0;
-            const float omega = 7.29e-5;
-
-
-            float degToRad(float degrees){
-                // convert from degrees to radians
-                return rad_deg*degrees;
-            }
-
-            float minToRad(float minutes){
-                // convert from minutes to radians
-                return rad_min*minutes;
-            }        
-
-            float openBoundary(vec2 vUv, vec4 u_ij, vec4 u_ijm, vec4 u_imj, float h_ij){
-                float eta = 0.0;
-                if(h_ij<gx){
-                    return eta;
-                }
-                float c = sqrt(g*h_ij);
-
-                float etaij = u_ij.r;
-                float Mij = u_ij.g;
-                float Nij = u_ij.b;
-                
-                float etaimj = u_imj.r;
-                float Mimj = u_imj.g;
-                float Nimj = u_imj.b;
-            
-                float etaijm = u_ijm.r;
-                float Mijm = u_ijm.g;
-                float Nijm = u_ijm.b;
-                
-                //j=0
-                float k = 1.0;
-                if (vUv.y <= k*texel.y){
-                    eta = sqrt(Nij*Nij+0.25*(Mij+Mimj)*(Mij+Mimj))/c;
-
-                    if (Nij>0.0){
-                        eta = -eta;
-                    }
-                }
-            
-                if (vUv.y >= 1.0-k*texel.y){
-                    // eta = sqrt(Nijm*Nijm+0.25*(Mij+Mijm)*(Mij+Mijm))/c;
-                    eta = sqrt(Nijm*Nijm + Mijm*Mijm)/c;
-                    if (Nijm<0.0){
-                        eta = -eta;
-                    }
-                }
-            
-                if(isPeriodic==0){
-                    if (vUv.x <= k*texel.x){
-                        eta = sqrt(Mij*Mij+0.25*(Nij+Nijm)*(Nij+Nijm))/c;
-                        if (Mij>0.0){
-                            eta = -eta;
-                        }
-                    }
-                    
-                    if (vUv.x >=1.0-k*texel.x){
-                        eta = sqrt(Mimj*Mimj+0.25*(Nij+Nijm)*(Nij+Nijm))/c;
-                        if (Mimj<0.0){
-                            eta = -eta;
-                        }
-                    }
-                }
-                
-            
-                if(vUv.x <= k*texel.x && vUv.y<=k*texel.y){
-                    eta = sqrt(Mij*Mij +Nij*Nij)/c;
-                    if (Nij>0.0){
-                        eta = -eta;
-                    }
-                }
-            
-                if(vUv.x >= 1.0-k*texel.x && vUv.y<=k*texel.y){
-                    eta = sqrt(Mimj*Mimj+Nij*Nij)/c;
-                    if (Nij>0.0){
-                        eta = -eta;
-                    }
-                }
-            
-                if(vUv.x <= k*texel.x && vUv.y>=1.0-k*texel.y){
-                    eta = sqrt(Mij*Mij +Nij*Nij)/c;
-                    if (Nijm<0.0){
-                        eta = -eta;
-                    }
-                }
-            
-                if(vUv.x >= 1.0 - k*texel.x && vUv.y>=1.0-k*texel.y){
-                    eta = sqrt(Mimj*Mimj +Nijm*Nijm)/c;
-                    if (Nijm<0.0){
-                        eta = -eta;
-                    }
-                }
-
-                if(abs(eta)>1.0){
-                  eta = 0.0;
-                }
-                
-                return eta;
-            }
-            
-            float updateInnerCellSurface(vec2 vUv, vec2 UV, vec4 uij, vec4 uimj, vec4 uijm){
-                /* apply mass conservation equation to update water surface */
-
-                // calculate space varying constants
-                float V  = UV.y;
-                float dlonrad = minToRad(dlon);
-                float dlatrad = minToRad(dlat);
-                float latj = V*(ymax-ymin)+ymin;
-                float latjp = latj + 0.5*dlat/60.0;
-                float latjm = latj - 0.5*dlat/60.0;
-                float coslatj = cos(degToRad(latj));
-                float coslatjp = cos(degToRad(latjp));
-                float coslatjm = cos(degToRad(latjm));
-
-                float eta2ij = 0.0;
-
-                if(uij.a>gx){
-                    eta2ij = uij.r - dt/(Rearth*coslatj*dlonrad)*(uij.g - uimj.g + uij.b*coslatjp - uijm.b*coslatjm); 
-                }
-
-                return eta2ij;
-
-            }
-
-            float updateSurface(vec2 vUv, vec2 UV, vec4 uij, vec4 uimj, vec4 uijm){
-
-                bool isBoundary = vUv.x < texel.x || vUv.x > 1.0 - texel.x || vUv.y < texel.y || vUv.y > 1.0 - texel.y;
-
-               
-                if (isBoundary && isPeriodic == 0){
-                    
-                    return openBoundary(UV, uij, uijm, uimj, uij.a);
-
-
-                }
-                else{
-
-                    return updateInnerCellSurface(vUv, UV, uij, uimj, uijm);
-
-                }               
-
-                return uij.r;
-
-            }
-            vec4 queryPeriodicTexture( vec2 uv){
-                vec4 uij = texture2D(u0, uv);
-                if(isPeriodic == 1){
-                    float uright = mod(uv.x, 1.0);
-                    uij = texture2D(u0, vec2(uright, uv.y));
-                }
-
-                return uij;
-            }
-            vec2 correctedUV(vec2 uv){
-                // corrected uv coordinates 
-                // so min(u) maps to U=0, and max(u) maps to U = 1
-                // same with v
-                // since normally, these are displace by half texel
-
-                float nx = 1.0/texel.x;
-                float ny = 1.0/texel.y;
-                float V = (uv.y-0.5*texel.y)/((ny-1.0)*texel.y);
-                float U = (uv.x-0.5*texel.x)/((nx-1.0)*texel.x);
-
-                return vec2(U,V);
-            }
-            
-            void main(){
-                // u = (eta, p, q, h)
-                // eta: free surface
-                // p: x-momentum
-                // q: y-momentum
-                // h: water depth, >0 if wet, <0 if dry.
-
-                // read previous frame, handling periodic boundaries
-                vec2 right = vec2(texel.x,0.0);
-                vec2 front = vec2(0.0, texel.y);
-
-                vec4 uij = texture2D(u0, vUv);
-                vec4 uijm = texture2D(u0, vUv - front);
-                vec4 uimj = queryPeriodicTexture(vUv - right);
-
-                float eta2ij = updateSurface(vUv, correctedUV(vUv), uij, uimj, uijm);
-
-
-                gl_FragColor = vec4(eta2ij, uij.g, uij.b, uij.a);
-                // gl_FragColor = uimj;
-            }
-            
-        `
-    );
-
-    sphericalMomentumStepShader = compileShader(
-      gl.FRAGMENT_SHADER,
-      `
-            precision highp float;
-
-            varying vec2 vUv;
-            uniform sampler2D u0; 
-            uniform vec2 texel; 
-
-            uniform float dlon;
-            uniform float dlat;
-            uniform float dt;
-            uniform float xmin; 
-            uniform float xmax;
-            uniform float ymin;
-            uniform float ymax;
-            uniform int isPeriodic;
-
-            const float rad_min = 0.000290888208665721; 
-            const float rad_deg = 0.01745329252;
-            const float cori_w = 7.2722e-5;
-            const float gx = 1e-5;
-            const float g = 9.81;
-            const float Rearth = 6378000.0;
-            const float omega = 7.29e-5;
-
-            float degToRad(float degrees){
-                // convert from degrees to radians
-                return rad_deg*degrees;
-            }
-
-            float minToRad(float minutes){
-                // convert from minutes to radians
-                return rad_min*minutes;
-            }
-            vec2 correctedUV(vec2 uv){
-                // corrected uv coordinates 
-                // so min(u) maps to U=0, and max(u) maps to U = 1
-                // same with v
-                // since normally, these are displace by half texel
-
-                float nx = 1.0/texel.x;
-                float ny = 1.0/texel.y;
-                float V = (uv.y-0.5*texel.y)/((ny-1.0)*texel.y);
-                float U = (uv.x-0.5*texel.x)/((nx-1.0)*texel.x);
-
-                return vec2(U,V);
-            }
-
-            vec4 queryPeriodicTexture(vec2 uv){
-                vec4 uij = texture2D(u0, uv);
-                if(isPeriodic == 1){
-                    float uright = mod(uv.x, 1.0);
-                    uij = texture2D(u0, vec2(uright, uv.y));
-                }
-
-                return uij;
-            }
-
-
-            void main(){
-                // u = (eta, p, q, h)
-                // eta: free surface
-                // p: x-momentum
-                // q: y-momentum
-                // h: water depth, >0 if wet, <0 if dry.
-                
-
-                // read mass step, handling periodic boundaries
-                vec2 right = vec2(texel.x,0.0);
-                vec2 front = vec2(0.0, texel.y);
-
-                vec4 uij = texture2D(u0, vUv);
-                vec4 uipj = queryPeriodicTexture( vUv + right );
-                vec4 uipjp = queryPeriodicTexture( vUv+right+front );
-
-                vec4 uijp = queryPeriodicTexture( vUv + front);
-                
-                float hiPlusHalfj = 0.5*(uij.a + uipj.a);
-                float hijPlusHalf = 0.5*(uij.a + uijp.a);
-                vec2 UV = correctedUV(vUv);
-                float lon = UV.x*(ymax-ymin)+ymin;
-                float latj = UV.y*(ymax-ymin)+ymin;
-                float coslatj = cos(degToRad(latj));
-                
-
-                float eta2ij = uij.r;
-                float eta2ipj = uipj.r;
-                float eta2ijp = uijp.r;
-
-
-                float M2ij = 0.0;
-                if(uij.a * uipj.a > gx*gx){
-                    M2ij = uij.g - dt*g*hiPlusHalfj/(Rearth*coslatj*minToRad(dlon))*(eta2ipj - eta2ij);
-
-                    // add coriolis
-                    float Nc = 0.25*(uij.b + uijp.b + uipj.b + uipjp.b);
-                    float R3 = 2.0 * dt * omega * sin(degToRad(latj+0.5*dlat/60.0));
-                    
-                    M2ij = M2ij + R3*Nc;
-                }
-
-                float N2ij = 0.0;                
-                if(uij.a * uijp.a > gx*gx){
-                    N2ij = uij.b - dt*g*hijPlusHalf/(Rearth*minToRad(dlat))*(eta2ijp - eta2ij);            
-
-                    // add coriolis
-
-                    float Mc = 0.25*(uij.g + uijp.g + uipj.g + uipjp.g);
-                    float R5 = -2.0 * dt * omega * sin(degToRad(latj));
-                    
-                    N2ij = N2ij + R5*Mc;                            
-                                        
-                }
-
-                gl_FragColor = vec4( eta2ij, M2ij, N2ij, uij.a);
-            }        
         `
     );
 
@@ -1362,15 +1022,6 @@ let Model = function(data, output) {
       cartesianDispersiveMomentumShader
     );
 
-    sphericalMassStepProgram = shaderProgram(
-      vertexShader,
-      sphericalMassStepShader
-    );
-    sphericalMomentumStepProgram = shaderProgram(
-      vertexShader,
-      sphericalMomentumStepShader
-    );
-
     dispersiveMassStepProgram = shaderProgram(
       vertexShader,
       dispersiveMassStepShader
@@ -1787,83 +1438,6 @@ let Model = function(data, output) {
     renderCartesianDispersiveMomentumProgram();
   };
 
-  /* Spherical equations */
-  let renderSphericalMassStepProgram = function() {
-    gl.useProgram(sphericalMassStepProgram.program);
-    gl.viewport(
-      0,
-      0,
-      discretization.numberOfCells[0],
-      discretization.numberOfCells[1]
-    );
-
-    gl.uniform1f(sphericalMassStepProgram.uniforms.dlon, discretization.dlon);
-    gl.uniform1f(sphericalMassStepProgram.uniforms.dlat, discretization.dlat);
-    gl.uniform1f(sphericalMassStepProgram.uniforms.dt, discretization.dt);
-    gl.uniform1f(sphericalMassStepProgram.uniforms.xmin, domain.xmin);
-    gl.uniform1f(sphericalMassStepProgram.uniforms.xmax, domain.xmax);
-    gl.uniform1f(sphericalMassStepProgram.uniforms.ymin, domain.ymin);
-    gl.uniform1f(sphericalMassStepProgram.uniforms.ymax, domain.ymax);
-
-    gl.uniform2f(
-      sphericalMassStepProgram.uniforms.texel,
-      1 / discretization.numberOfCells[0],
-      1 / discretization.numberOfCells[1]
-    );
-    gl.uniform1i(sphericalMassStepProgram.uniforms.u0, wave.first.textureId);
-    gl.uniform1i(
-      sphericalMassStepProgram.uniforms.isPeriodic,
-      domain.isPeriodic
-    );
-    renderFrameBuffer(wave.second.fbo);
-    wave.swap();
-  };
-
-  let renderSphericalMomentumStepProgram = function() {
-    gl.useProgram(sphericalMomentumStepProgram.program);
-    gl.viewport(
-      0,
-      0,
-      discretization.numberOfCells[0],
-      discretization.numberOfCells[1]
-    );
-
-    gl.uniform1f(
-      sphericalMomentumStepProgram.uniforms.dlon,
-      discretization.dlon
-    );
-    gl.uniform1f(
-      sphericalMomentumStepProgram.uniforms.dlat,
-      discretization.dlat
-    );
-    gl.uniform1f(sphericalMomentumStepProgram.uniforms.dt, discretization.dt);
-    gl.uniform1f(sphericalMomentumStepProgram.uniforms.xmin, domain.xmin);
-    gl.uniform1f(sphericalMomentumStepProgram.uniforms.xmax, domain.xmax);
-    gl.uniform1f(sphericalMomentumStepProgram.uniforms.ymin, domain.ymin);
-    gl.uniform1f(sphericalMomentumStepProgram.uniforms.ymax, domain.ymax);
-
-    gl.uniform2f(
-      sphericalMomentumStepProgram.uniforms.texel,
-      1 / discretization.numberOfCells[0],
-      1 / discretization.numberOfCells[1]
-    );
-    gl.uniform1i(
-      sphericalMomentumStepProgram.uniforms.u0,
-      wave.first.textureId
-    );
-    gl.uniform1i(
-      sphericalMomentumStepProgram.uniforms.isPeriodic,
-      domain.isPeriodic
-    );
-    renderFrameBuffer(wave.second.fbo);
-    wave.swap();
-  };
-
-  let renderSphericalWaveEquation = function() {
-    renderSphericalMassStepProgram();
-    renderSphericalMomentumStepProgram();
-  };
-
   /* Spherical dispersive equations */
   let renderDispersiveMassStepProgram = function() {
     gl.useProgram(dispersiveMassStepProgram.program);
@@ -2106,7 +1680,7 @@ let Model = function(data, output) {
       if (domain.coordinates == "cartesian") {
         renderCartesianProgram();
       } else if (domain.coordinates == "spherical") {
-        renderSphericalWaveEquation();
+        sphericalShallowWaterModel.render(wave, modelState);
       }
     }
 
