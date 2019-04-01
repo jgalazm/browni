@@ -215,8 +215,8 @@ const Reader = function(data, outputData) {
   });
 
   const pcolorDisplay = {
-    width: outputData.displayWidth,
-    height: outputData.displayHeight
+    width: outputData.displayWidth ? outputData.displayWidth : discretization.numberOfCells[0],
+    height: outputData.displayHeight ? outputData.displayHeight : discretization.numberOfCells[1]
   };
 
   const displayOption = outputData.displayOption
