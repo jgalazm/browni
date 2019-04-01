@@ -1,6 +1,6 @@
 {
   "name": "namijs",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Tsunami simulations on the web browser using WebGL",
   "main": "build/nami.js",
   "scripts": {
