@@ -1,6 +1,7 @@
 import { getLengthWidthSlip } from "./Earthquake";
 import Earthquake from './renderers/Earthquake/Earthquake';
 import SphericalShallowWater from "./renderers/SphericalShallowWater/SphericalShallowWater";
+import Display from "./renderers/Display/Display";
 
 let Model = function(data, output) {
   let gl, isWebGL2;
@@ -22,8 +23,7 @@ let Model = function(data, output) {
     cartesianDispersiveMomentumProgram,
     dispersiveMassStepProgram,
     dispersiveMomentumStepProgram,
-    maxHeightsProgram,
-    displayProgram;
+    maxHeightsProgram;
 
   let wave, maxHeights;
   let {
@@ -81,6 +81,7 @@ let Model = function(data, output) {
 
   const earthquakeModel = new Earthquake(gl);
   const sphericalShallowWaterModel = new SphericalShallowWater(gl);
+  const displayStep = new Display(gl);
 
   /*
         WebGL tools
@@ -947,68 +948,6 @@ let Model = function(data, output) {
         `
     );
 
-    displayShader = compileShader(
-      gl.FRAGMENT_SHADER,
-      `
-            precision highp float;
-            
-            const int nColors = 16;            
-            uniform sampler2D field;
-            uniform vec4 colormap[16];
-            uniform float thresholds[16];
-            uniform int displayedChannel;
-            
-            varying vec2 vUv;
-
-            vec4 getPseudoColor(float value){
-                vec4 pseudoColor;
-
-                if(value <= thresholds[0]){
-                    pseudoColor = colormap[0];
-                }
-                else if (value > thresholds[16-1]){
-                    pseudoColor = colormap[16-1];
-                }
-                else{
-                    for (int i=1; i<16; i++){
-                        vec4 cleft = colormap[i-1];
-                        vec4 cright = colormap[i];
-            
-                        if (value>thresholds[i-1] && value <= thresholds[i]){
-                            float t = (value - thresholds[i-1])/(thresholds[i] - thresholds[i-1]);
-                            pseudoColor = mix(cleft, cright, t);
-                            break;
-                        }
-                    }
-                }
-            
-                return pseudoColor;
-            }
-            
-            void main()
-            { 
-                float uij  = texture2D(field, vUv).r;
-                if(displayedChannel == 1){
-                    uij = texture2D(field, vUv).g;
-                }
-                else if(displayedChannel == 2){
-                    uij = texture2D(field, vUv).b;
-                }
-                else if(displayedChannel == 3){
-                    uij = texture2D(field, vUv).a;
-                }
-
-                float h = texture2D(field, vUv).a;
-
-                vec4 color = getPseudoColor(uij);
-
-                color.a = color.a * step(0.0, h);
-
-                gl_FragColor  = color;
-            }    
-        `
-    );
-
     initialProgram = shaderProgram(vertexShader, initialShader);
     asteroidProgram = shaderProgram(vertexShader, asteroidShader);
 
@@ -1032,7 +971,6 @@ let Model = function(data, output) {
     );
 
     maxHeightsProgram = shaderProgram(vertexShader, maxHeightsShader);
-    displayProgram = shaderProgram(vertexShader, displayShader);
   };
 
   let createBuffers = function() {
@@ -1539,32 +1477,6 @@ let Model = function(data, output) {
     maxHeights.swap();
   };
 
-  let renderDisplayProgram = function() {
-    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-    gl.useProgram(displayProgram.program);
-    gl.uniform4fv(
-      displayProgram.uniforms.colormap,
-      new Float32Array(colormap.rgba)
-    );
-    gl.uniform1fv(
-      displayProgram.uniforms.thresholds,
-      new Float32Array(colormap.thresholds)
-    );
-
-    let displayedChannel = 0;
-    if (displayOption === "heights") {
-      gl.uniform1i(displayProgram.uniforms.field, wave.first.textureId); //TDDO: fix texid
-    } else if (
-      displayOption === "max heights" ||
-      displayOption === "arrival times"
-    ) {
-      gl.uniform1i(displayProgram.uniforms.field, maxHeights.first.textureId);
-      if (displayOption === "arrival times") displayedChannel = 1;
-    }
-    gl.uniform1i(displayProgram.uniforms.displayedChannel, displayedChannel);
-
-    renderFrameBuffer(null);
-  };
 
   let setPOIs = function() {
     /*
@@ -1858,7 +1770,7 @@ let Model = function(data, output) {
 
     renderMaxHeightsProgram();
 
-    renderDisplayProgram();
+    displayStep.render(wave, displayOption, colormap);
   };
 
   let start = function() {
@@ -1940,7 +1852,7 @@ let Model = function(data, output) {
     pois,
     runSimulationStep,
     displayPColor: () => {
-      renderDisplayProgram();
+      displayStep.render(wave, displayOption, colormap);
     },
     displayOption,
     set colors(newColors) {
@@ -1962,7 +1874,7 @@ let Model = function(data, output) {
       earthquake = newEarthquake;
       setEarthquake();
       renderEarthquake();
-      renderDisplayProgram();
+      displayStep.render(wave, displayOption, colormap);
       discretization.stepNumber = 0;
     },
 
