@@ -1770,7 +1770,7 @@ let Model = function(data, output) {
 
     renderMaxHeightsProgram();
 
-    displayStep.render(wave, displayOption, colormap);
+    displayStep.render(wave, maxHeights, displayOption, colormap);
   };
 
   let start = function() {
@@ -1852,7 +1852,7 @@ let Model = function(data, output) {
     pois,
     runSimulationStep,
     displayPColor: () => {
-      displayStep.render(wave, displayOption, colormap);
+      displayStep.render(wave, maxHeights, displayOption, colormap);
     },
     displayOption,
     set colors(newColors) {
@@ -1874,7 +1874,7 @@ let Model = function(data, output) {
       earthquake = newEarthquake;
       setEarthquake();
       renderEarthquake();
-      displayStep.render(wave, displayOption, colormap);
+      displayStep.render(wave, maxHeights, displayOption, colormap);
       discretization.stepNumber = 0;
     },
 

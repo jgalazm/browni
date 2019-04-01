@@ -26,7 +26,7 @@ export default function Display(gl) {
     displayShader
   );
 
-  const render = (doubleFBO, displayOption, colormap) => {
+  const render = (doubleFBO, maxHeights, displayOption, colormap) => {
 
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     gl.useProgram(displayProgram.program);
