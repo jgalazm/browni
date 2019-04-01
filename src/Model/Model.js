@@ -2,6 +2,7 @@ import { getLengthWidthSlip } from "./Earthquake";
 import Earthquake from './renderers/Earthquake/Earthquake';
 import SphericalShallowWater from "./renderers/SphericalShallowWater/SphericalShallowWater";
 import Display from "./renderers/Display/Display";
+import MaxHeights from "./renderers/MaxHeights/MaxHeights";
 
 let Model = function(data, output) {
   let gl, isWebGL2;
@@ -12,18 +13,14 @@ let Model = function(data, output) {
     cartesianDispersiveMassShader,
     cartesianDispersiveMomentumShader,
     dispersiveMassStepShader,
-    dispersiveMomentumStepShader,
-    maxHeightsShader,
-    displayShader;
-
+    dispersiveMomentumStepShader;
   let initialProgram,
     asteroidProgram,
     cartesianWaveProgram,
     cartesianDispersiveMassProgram,
     cartesianDispersiveMomentumProgram,
     dispersiveMassStepProgram,
-    dispersiveMomentumStepProgram,
-    maxHeightsProgram;
+    dispersiveMomentumStepProgram;
 
   let wave, maxHeights;
   let {
@@ -82,7 +79,7 @@ let Model = function(data, output) {
   const earthquakeModel = new Earthquake(gl);
   const sphericalShallowWaterModel = new SphericalShallowWater(gl);
   const displayStep = new Display(gl);
-
+  const maxHeightsStep = new MaxHeights(gl);
   /*
         WebGL tools
 
@@ -915,39 +912,6 @@ let Model = function(data, output) {
         `
     );
 
-    maxHeightsShader = compileShader(
-      gl.FRAGMENT_SHADER,
-      `
-            precision highp float;
-
-            uniform sampler2D maxHeights;
-            uniform sampler2D wave;
-            uniform float currentTime;
-
-            varying vec2 vUv;
-
-            void main(){
-                vec4 pixelMaxHeight = texture2D(maxHeights, vUv);
-                float maxHeight = pixelMaxHeight.r;
-                float arrivalTime = pixelMaxHeight.g;
-
-                float newHeight = texture2D(wave, vUv).r;
-
-                float depth = texture2D(wave, vUv).a;
-
-                if( maxHeight < newHeight){
-                    maxHeight = newHeight;
-                }
-                
-                if(arrivalTime == 0.0 && newHeight > 1e-5 && depth > 100.0){
-                    arrivalTime = currentTime;
-                }
-                gl_FragColor = vec4( maxHeight, arrivalTime, 0.0, 1.0);
-
-            }
-        `
-    );
-
     initialProgram = shaderProgram(vertexShader, initialShader);
     asteroidProgram = shaderProgram(vertexShader, asteroidShader);
 
@@ -970,7 +934,6 @@ let Model = function(data, output) {
       dispersiveMomentumStepShader
     );
 
-    maxHeightsProgram = shaderProgram(vertexShader, maxHeightsShader);
   };
 
   let createBuffers = function() {
@@ -1455,28 +1418,6 @@ let Model = function(data, output) {
 
   /* Additional programs that use the results of simulations */
 
-  let renderMaxHeightsProgram = () => {
-    gl.useProgram(maxHeightsProgram.program);
-    gl.viewport(
-      0,
-      0,
-      discretization.numberOfCells[0],
-      discretization.numberOfCells[1]
-    );
-
-    gl.uniform1f(
-      maxHeightsProgram.uniforms.currentTime,
-      discretization.stepNumber * discretization.dt
-    );
-    gl.uniform1i(
-      maxHeightsProgram.uniforms.maxHeights,
-      maxHeights.first.textureId
-    );
-    gl.uniform1i(maxHeightsProgram.uniforms.wave, wave.first.textureId);
-    renderFrameBuffer(maxHeights.second.fbo);
-    maxHeights.swap();
-  };
-
 
   let setPOIs = function() {
     /*
@@ -1596,7 +1537,7 @@ let Model = function(data, output) {
       }
     }
 
-    renderMaxHeightsProgram();
+    maxHeightsStep.render( maxHeights, wave, modelState);
 
     storePOISValues();
   };
@@ -1768,7 +1709,7 @@ let Model = function(data, output) {
     }
     
 
-    renderMaxHeightsProgram();
+    maxHeightsStep.render(maxHeights, wave, modelState);
 
     displayStep.render(wave, maxHeights, displayOption, colormap);
   };
