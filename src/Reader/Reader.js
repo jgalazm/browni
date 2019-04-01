@@ -1,39 +1,31 @@
 import { getArrayFromImage, getArrayFromFile, getStringFromFile } from "./FileUtils";
 
 const Reader = function(data, outputData) {
-  let loadBathymetry = function(resolve) {
-    if (typeof data.bathymetry == "object") {
+  let loadBathymetry = function(resolve, bathymetryInput, bathymetryMetadata, binaryBathymetry) {
+    if (typeof bathymetryInput == "object") {
       // assume bathymetry is an array
-      resolve(data.bathymetry);
+      resolve(bathymetryInput);
     } else if (
-      data.bathymetry.slice(-3) === "png" ||
-      data.bathymetry.slice(-3) === "jpg"
+      bathymetryInput.slice(-3) === "png" ||
+      bathymetryInput.slice(-3) === "jpg"
     ) {
-      if (!data.bathymetryMetadata) {
+      if (!bathymetryMetadata) {
         throw new Error(
           "Must define data.bathymetryMetadata when using image format bathymetry"
         );
       }
       let bathymetryImage = new Image();
       bathymetryImage.onload = () => {
-        data.bathymetry = {
-          array: getArrayFromImage(bathymetryImage, data.bathymetryMetadata)
-        };
-
-        resolve(data.bathymetry.array);
+        resolve(getArrayFromImage(bathymetryImage, bathymetryMetadata));
       };
-      bathymetryImage.src = data.bathymetry;
+      bathymetryImage.src = bathymetryInput;
     } else {
       getArrayFromFile(
-        data.bathymetry,
+        bathymetryInput,
         array => {
-          data.bathymetry = {
-            array: array
-          };
-
-          resolve(data.bathymetry.array);
+          resolve(array);
         },
-        data.binaryBathymetry ? "binary" : "ascii"
+        binaryBathymetry ? "binary" : "ascii"
       );
     }
   };
@@ -109,11 +101,32 @@ const Reader = function(data, outputData) {
   };
 
   // discretization
+  let [nx,ny] = [-1, -1];
+  if(data.gridSize !== undefined){
+    nx = (domain.xmax-domain.xmin)/gridSize + 1;
+    ny = (domain.ymax-domain.ymin)/gridSize + 1;
+  }
+  else if( data.waveWidth !== undefined && data.waveHeight !== undefined){
+    [nx,ny] = [data.waveWidth, data.waveHeight];
+  }
+  else if(data.bathymetry === undefined){
+    // 20 minutes resolution, 1080 x 480 grid for the whole globe
+    nx = (domain.xmax-domain.xmin)*3 + 1;
+    ny = (domain.ymax-domain.ymin)*3 + 1;
+  }
+  else{
+    throw "Cannot determine grid size from input";
+  }
+
   let discretization = {
-    numberOfCells: [data.waveWidth, data.waveHeight],
+    numberOfCells: [nx, ny],
     dt: undefined,
     stepNumber: 0
   };
+
+  if (domain.coordinates === undefined){
+    domain.coordinates = "spherical";
+  }
 
   if (domain.coordinates == "cartesian") {
     discretization.dx =
@@ -130,14 +143,23 @@ const Reader = function(data, outputData) {
       (60 * (domain.ymax - domain.ymin)) /
       (discretization.numberOfCells[1] - 1);
   }
-
+  isPeriodic
   if (domain.equations === undefined) {
     domain.equations = "linear";
   }
 
   // slab
 
-  const slab = data.slab;
+  let slab = new Promise( (resolve, reject) => {
+    if(data.slab) {
+      resolve(data.slab);
+      return;
+    }
+
+    fetch("/assets/SlabModels.json").then( response => {
+      resolve(response.json());
+    })
+  });
 
   // bathymetry
   let bathymetry = {
@@ -171,8 +193,19 @@ const Reader = function(data, outputData) {
     throw `Bathymetry extent should include domain extent 
            domain:${domain}, bathymetry.extent:${bathymetry.extent}`;
   }
+  
+  let bathymetryInput = data.bathymetry; 
+  let bathymetryMetadata = data.bathymetryMetadata;
+  if( data.bathymetry === undefined){
+    bathymetryInput = '/assets/bathymetry.png'
+    bathymetryMetadata = {
+      zmin: -6709,
+      zmax: 10684
+    };
+  }
+
   bathymetry.array = new Promise((resolve, reject) => {
-    loadBathymetry(resolve);
+    loadBathymetry(resolve, bathymetryInput, bathymetryMetadata, data.binaryBathymetry);
   });
 
   // initial condition
@@ -182,8 +215,8 @@ const Reader = function(data, outputData) {
   });
 
   const pcolorDisplay = {
-    width: outputData.displayWidth,
-    height: outputData.displayHeight
+    width: outputData.displayWidth ? outputData.displayWidth : discretization.numberOfCells[0],
+    height: outputData.displayHeight ? outputData.displayHeight : discretization.numberOfCells[1]
   };
 
   const displayOption = outputData.displayOption
