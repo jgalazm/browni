@@ -274,7 +274,7 @@ const Reader = function(data, outputData) {
   };
 
   let colormap =
-    output.colormap !== undefined ? output.colormap : defaultColormap;
+    outputData.colormap !== undefined ? outputData.colormap : defaultColormap;
 
   // flatten the array
   colormap.rgba = colormap.rgba.reduce((a, b) => {
