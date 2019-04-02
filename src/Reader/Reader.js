@@ -229,7 +229,7 @@ const Reader = function(data, outputData) {
     ? outputData.displayOption
     : "heights";
 
-  const pois = output.pois ? output.pois : {};
+  const pois = outputData.pois ? outputData.pois : {};
 
   const cmax = 0.1;
   const cmin = -0.1;
