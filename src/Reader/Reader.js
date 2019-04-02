@@ -14,11 +14,17 @@ const Reader = function(data, outputData) {
           "Must define data.bathymetryMetadata when using image format bathymetry"
         );
       }
-      let bathymetryImage = new Image();
-      bathymetryImage.onload = () => {
-        resolve(getArrayFromImage(bathymetryImage, bathymetryMetadata));
-      };
-      bathymetryImage.src = bathymetryInput;
+      fetch(bathymetryInput)
+      .then(r => r.blob())
+      .then(blob => {
+        const img = URL.createObjectURL(blob);
+        const imgElement = document.createElement('img');
+        imgElement.setAttribute('src', img);
+        imgElement.onload = () =>{
+          resolve(getArrayFromImage(imgElement, bathymetryMetadata));
+        };
+      });
+
     } else {
       getArrayFromFile(
         bathymetryInput,
