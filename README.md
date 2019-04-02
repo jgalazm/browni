@@ -1,3 +1,8 @@
+# Getting started
+
+https://codepen.io/jgalazm/pen/MRaWVL
+
+
 # Installing dependencies
 After installing node.js just run
 
