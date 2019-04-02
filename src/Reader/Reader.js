@@ -156,9 +156,9 @@ const Reader = function(data, outputData) {
       return;
     }
 
-    fetch("/assets/SlabModels.json").then( response => {
+    fetch("https://unpkg.com/namijs@1.0.3/assets/SlabModels.json").then( response => {
       resolve(response.json());
-    })
+    });
   });
 
   // bathymetry
@@ -197,7 +197,7 @@ const Reader = function(data, outputData) {
   let bathymetryInput = data.bathymetry; 
   let bathymetryMetadata = data.bathymetryMetadata;
   if( data.bathymetry === undefined){
-    bathymetryInput = '/assets/bathymetry.png'
+    bathymetryInput = 'https://unpkg.com/namijs@1.0.3/assets/bathymetry.png';
     bathymetryMetadata = {
       zmin: -6709,
       zmax: 10684
