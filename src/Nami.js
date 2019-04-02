@@ -4,17 +4,20 @@ import Reader from "./Reader/Reader";
 
 let Nami = function(data, output, lifeCycle) {
   let model, controller;
+  let dataWasParsed = () =>{};
+  if(lifeCycle && lifeCycle.dataWasParsed) dataWasParsed = lifeCycle.dataWasParsed;
+
+  let dataWasLoaded = (model) =>{
+    document.body.appendChild(model.canvas);
+  };
+  if(lifeCycle && lifeCycle.dataWasLoaded) dataWasLoaded = lifeCycle.dataWasLoaded;
 
   let init = newData => {
-    if (lifeCycle.dataWasParsed) {
-      lifeCycle.dataWasParsed(newData);
-    }
+    dataWasParsed(newData);
 
     this.model = new Model(newData, output);
 
-    if (lifeCycle.dataWasLoaded !== undefined) {
-      lifeCycle.dataWasLoaded(this.model);
-    }
+    dataWasLoaded(this.model);
 
     this.controller = new Controller(this.model, output, lifeCycle);
 

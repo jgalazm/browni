@@ -1,33 +1,24 @@
 let Controller = function(model,data, lifeCycle){
     let thisController = {};
 
-    
-    let simulationDidFinish, modelStepDidFinish, iterationDidFinish;
-
     let paused = false;
 
-    if( typeof lifeCycle !== 'undefined'){
-        if( typeof lifeCycle.simulationDidFinish !== 'undefined'){
-            simulationDidFinish = lifeCycle.simulationDidFinish;
-        }
-        else{
-            simulationDidFinish = ()=>{};
-        }
+    let simulationDidFinish = (model, controller) =>{};
+    if(lifeCycle && lifeCycle.simulationDidFinish) simulationDidFinish = lifeCycle.simulationDidFinish;
 
-        if( typeof lifeCycle.modelStepDidFinish !== 'undefined'){
-            modelStepDidFinish = lifeCycle.modelStepDidFinish;
+    let modelStepDidFinish = (mode,controller) =>{
+        if (model.discretization.stepNumber % 10 === 0) {
+          return false;
         }
-        else{
-            modelStepDidFinish = ()=>{};
-        }
+        return true;
+    };
+    if(lifeCycle && lifeCycle.modelStepDidFinish) modelStepDidFinish = lifeCycle.modelStepDidFinish;
 
-        if( typeof lifeCycle.iterationDidFinish !== 'undefined'){
-            iterationDidFinish = lifeCycle.iterationDidFinish;
-        }
-        else{
-            iterationDidFinish = (model, controller, animate)=>{  requestAnimationFrame(animate); };
-        }        
-    }
+    let iterationDidFinish = (model, controller, animate)=>{  requestAnimationFrame(animate); };
+    if(lifeCycle && lifeCycle.iterationDidFinish) iterationDidFinish = lifeCycle.iterationDidFinish;
+
+    let modelSimulationWillStart = (model, controller) =>{};
+    if(lifeCycle && lifeCycle.modelSimulationWillStart) modelSimulationWillStart = lifeCycle.modelSimulationWillStart;
 
     let downloadGridArray = function(array, time){
         
@@ -92,8 +83,7 @@ let Controller = function(model,data, lifeCycle){
         
         
         if(model.discretization.stepNumber == 0){
-            if(lifeCycle.modelSimulationWillStart)
-            lifeCycle.modelSimulationWillStart(model, thisController);
+            modelSimulationWillStart(model, thisController);
         }
 
         if(paused){
