@@ -65,6 +65,8 @@ export function getArrayFromFile(url, callback, format = "ascii") {
 }
 
 export function getArrayFromImage(image, bathymetryMetadata) {
+  image.crossOrigin = "Anonymous";
+  
   let canvas = document.createElement("canvas");
   canvas.height = image.height;
   canvas.width = image.width;
