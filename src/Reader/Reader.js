@@ -86,7 +86,11 @@ const Reader = function(data, outputData) {
           resolve(earthquake);
         });
       } else {
-        resolve(data.earthquake);
+
+        let earthquake = data.earthquake;
+        if(!earthquake.length) earthquake = [earthquake];
+
+        resolve(earthquake);
       }
     } else if (data.asteroid !== undefined) {
       resolve(data.asteroid);
@@ -105,6 +109,10 @@ const Reader = function(data, outputData) {
     ymax: data.ymax,
     isPeriodic: data.isPeriodic !== undefined ? data.isPeriodic : 0
   };
+
+  if(domain.xmin>domain.xmax || domain.ymin>domain.ymax){
+    throw "xmin,ymin must be greater than xmax,ymax"
+  }
 
   // discretization
   let [nx,ny] = [-1, -1];
