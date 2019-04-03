@@ -4,7 +4,7 @@ import SphericalShallowWater from "./renderers/SphericalShallowWater/SphericalSh
 import Display from "./renderers/Display/Display";
 import MaxHeights from "./renderers/MaxHeights/MaxHeights";
 
-let Model = function(data, output) {
+let Model = function(data) {
   let gl, isWebGL2;
 
   let wave, maxHeights;

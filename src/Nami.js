@@ -15,11 +15,11 @@ let Nami = function(data, output, lifeCycle) {
   let init = newData => {
     dataWasParsed(newData);
 
-    this.model = new Model(newData, output);
+    this.model = new Model(newData);
 
     dataWasLoaded(this.model);
 
-    this.controller = new Controller(this.model, output, lifeCycle);
+    this.controller = new Controller(this.model, newData, lifeCycle);
 
     this.controller.animate();
   };

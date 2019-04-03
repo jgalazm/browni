@@ -281,6 +281,11 @@ const Reader = function(data, outputData) {
     return a.concat(b);
   });
 
+  console.log(outputData);
+  const stopTime = outputData.stopTime !== undefined ? outputData.stopTime : Infinity;
+  
+  const loop = outputData.loop;
+
   return {
     domain,
     discretization,
@@ -290,7 +295,9 @@ const Reader = function(data, outputData) {
     pcolorDisplay,
     displayOption,
     pois,
-    colormap
+    colormap,
+    stopTime,
+    loop
   };
 };
 
