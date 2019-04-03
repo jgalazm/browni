@@ -283,8 +283,7 @@ const Reader = function(data, outputData) {
     return a.concat(b);
   });
 
-  console.log(outputData);
-  const stopTime = outputData.stopTime !== undefined ? outputData.stopTime : Infinity;
+  const stopTime = outputData.stopTime !== undefined ? outputData.stopTime : 30*60*60;
   
   const loop = outputData.loop;
 
