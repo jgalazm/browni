@@ -208,6 +208,12 @@ const Reader = function(data, outputData) {
       zmin: -6709,
       zmax: 10684
     };
+    bathymetry.extent = {
+      xmin: -179.99166666666667,
+      xmax: 179.67499999999998,
+      ymin: -79.991666666666646,
+      ymax: 79.841666666666654,      
+    };
   }
 
   bathymetry.array = new Promise((resolve, reject) => {
