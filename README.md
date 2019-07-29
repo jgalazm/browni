@@ -1,7 +1,8 @@
 # Nami
 
-WebGL tsunami simulator that seamlessly integrates with the web
-See demo [here](https://codepen.io/jgalazm/pen/MRaWVL): 
+WebGL tsunami simulator that seamlessly integrates with the web.
+
+See [this demo](https://codepen.io/jgalazm/pen/MRaWVL): 
 
 ## Installation 
 
