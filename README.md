@@ -3,15 +3,17 @@
 WebGL tsunami simulator that seamlessly integrates with the web
 See demo [here](https://codepen.io/jgalazm/pen/MRaWVL): 
 
-## Installation (WIP)
+## Installation 
 
 Nami can be installed using the Node Package Manager
 
-`npm install namijs`
+```
+npm install namijs
+```
 
-* Import with <script/>
-* Import with 'import'
-* Import with 'require'
+* Import with <script/> (coming soon)
+* Import with 'import' (coming soon)
+* Import with 'require' (coming soon)
 
 ## Examples 
 * ["Hello world"](https://codepen.io/jgalazm/pen/MRaWVL)
