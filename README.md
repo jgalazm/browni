@@ -19,4 +19,4 @@ WebGL tsunami simulator that seamlessly integrates with the web
 > Can I simulate "this"?
 
 
-See [the preprint](hal.inria.fr/hal-02112763).
+Check [the preprint](hal.inria.fr/hal-02112763).
