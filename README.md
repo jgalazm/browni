@@ -12,11 +12,11 @@ WebGL tsunami simulator that seamlessly integrates with the web
 (coming soon)
 
 ## More info
-> Why Nami?
-> How was it done? 
-> Has it been used before? 
-> Are simulations accurate? 
-> Can I simulate "this"?
+- Why Nami?
+- How was it done? 
+- Has it been used before? 
+- Are simulations accurate? 
+- Can I simulate "this"?
 
 
 Check [the preprint](hal.inria.fr/hal-02112763).
