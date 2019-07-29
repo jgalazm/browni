@@ -1,13 +1,4 @@
-# Installing dependencies
-After installing node.js just run
+# Nami
 
-```
-npm install
-```
+Tsunami simulations that seamlessly integrates with the web
 
-# Bundle build
-After running
-```
-npm run build
-```
-the bundle should be located at `build/nami.js`
