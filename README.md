@@ -2,8 +2,8 @@
 
 WebGL tsunami simulator that seamlessly integrates with the web
 
-## Demo 
-* ["Hello world](codepen.io/jgalazm/pen/MRaWVL)
+## Examples 
+* ["Hello world"](codepen.io/jgalazm/pen/MRaWVL)
 * Switch scenario with key press (coming soon)
 * Integration with Three.js, Leaflet, ArcGIS and CesiumJS (coming soon)
 * Save colored texture to a video (coming soon)
