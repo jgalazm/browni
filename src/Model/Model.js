@@ -161,6 +161,24 @@ let Model = function(data) {
     return texture;
   };
 
+  let createTextureFromLongArray = function(longArray, textureId) {
+    let internalFormat = isWebGL2 ? gl.R32F : gl.RGBA;
+    let format = gl.RED;
+    let type = gl.FLOAT;
+
+    let texture = createTextureFromData(
+      longArray[1],
+      longArray[0],
+      longArray.slice(2, longArray.length ),
+      textureId,
+      internalFormat,
+      format,
+      type
+    );
+
+    return texture;
+  };
+
   let createFBO = function(
     textureId,
     w,
@@ -406,12 +424,12 @@ let Model = function(data) {
   };
 
   let setTimeStep = function(options) {
-    let hmax = Math.max.apply(
+    let hmax = Array.isArray(bathymetry.array[0]) ? Math.max.apply(
       null,
       bathymetry.array.map(row => {
         return Math.max.apply(null, row);
       })
-    );
+    ) : bathymetry.array.reduce((prev,curr) => Math.max(prev, curr));
 
     let cfl;
     if (options.timeStep !== undefined) {
@@ -575,7 +593,7 @@ let Model = function(data) {
   };
 
   let start = function() {
-    bathymetry.texture = createTextureFromMatrix(
+    bathymetry.texture = createTextureFromLongArray(
       bathymetry.array,
       bathymetry.textureId
     );
