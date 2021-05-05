@@ -347,7 +347,7 @@ let Model = function(data) {
       //     ? pois[poi].depth
       //     : bathymetry[j][i];
 
-      // pois[poi].shallowCorrectionFactor = 1;
+      pois[poi].shallowCorrectionFactor = 1;
       // pois[poi].closestDeepPoint = [];
       // pois[poi].closestDeepPointDepth = undefined;
 
