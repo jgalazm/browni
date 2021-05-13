@@ -4,15 +4,13 @@ services:
     build: .
     image: nami
     volumes:
-      - build-volume:/nami/build
+      - .:/nami
+      - /nami/node_modules
   local-server:
     image: python:3.9.4-slim-buster
     volumes:
-      - build-volume:/code/build
       - ./:/code
     ports:
       - 4000:8000
     working_dir: /code
     command: ["python", "-m", "http.server"]
-volumes:
-  build-volume:

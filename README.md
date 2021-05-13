@@ -36,4 +36,4 @@ Check [the preprint](hal.inria.fr/hal-02112763)
 
 # Local development environment
 
-A 'docker-compose.yml' is provided with two services `nami` and `local-server`. The `nami` service opens a container whose image, once built, contains an updated-from-source build of the library. This build is created with rollup and stored in a docker volume called `build-volume` which is shared with the `local-server`. This `local-server` is a python simple http server that will enable properly loading this built file.
+A 'docker-compose.yml' is provided with two services `nami` and `local-server`. The `nami` service opens a container whose contains the `node_modules` dependencies and its `CMD` builds the bundle. This build is created with rollup and stored direcly into the host folder which is shared with the `local-server`. This `local-server` is a python simple http server that will enable properly loading this built file.
