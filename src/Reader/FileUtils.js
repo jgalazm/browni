@@ -53,7 +53,6 @@ export function getArrayFromFile(url, callback, format = "ascii") {
       fileReader.onload = event => {
         arrayBuffer = event.target.result;
         let arr = [...new Float64Array(arrayBuffer)];
-        arr = rowToMatrix(arr.slice(2, arr.length - 1), arr[0], arr[1]);
 
         callback(arr);
       };

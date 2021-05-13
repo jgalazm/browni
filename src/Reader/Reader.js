@@ -157,7 +157,7 @@ const Reader = function(data, outputData) {
       (60 * (domain.ymax - domain.ymin)) /
       (discretization.numberOfCells[1] - 1);
   }
-  isPeriodic
+  
   if (domain.equations === undefined) {
     domain.equations = "linear";
   }
