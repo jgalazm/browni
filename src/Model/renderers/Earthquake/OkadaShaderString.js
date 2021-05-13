@@ -319,7 +319,9 @@ const okadaShaderString = `
                 value = value + u0;
 
 
-                gl_FragColor = vec4(value,0.0,0.0, bathymetry+value);
+                // gl_FragColor = vec4(value,0.0,0.0, bathymetry+value);
+                gl_FragColor = vec4((2.0*vUv.x-1.0) * 0.1,0.0,0.0, bathymetry+value);
+
 
             }
         

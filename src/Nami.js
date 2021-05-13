@@ -7,9 +7,7 @@ let Nami = function(data, output, lifeCycle) {
   let dataWasParsed = () =>{};
   if(lifeCycle && lifeCycle.dataWasParsed) dataWasParsed = lifeCycle.dataWasParsed;
 
-  let dataWasLoaded = (model) =>{
-    document.body.appendChild(model.canvas);
-  };
+  let dataWasLoaded = (model) =>{};
   if(lifeCycle && lifeCycle.dataWasLoaded) dataWasLoaded = lifeCycle.dataWasLoaded;
 
   let init = newData => {

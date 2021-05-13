@@ -1,56 +1,46 @@
-let offscreen = new OffscreenCanvas(100,100);
-let data = {
-    bathymetry: [[1,1,1],[1,1,1],[1,1,1]]
-    ,
-    earthquake: [{
-        L: 5,
-        W: 3,
-        depth: 2,
-        slip: 1.0,
-        strike: 30.0,
-        dip: 70.0,
-        rake: -45.0,
-        U3: 1.0,
-        cn: 0,
-        ce: 0,
-        reference: 'center'
-    }],
-    coordinates: 'cartesian',
-    waveWidth: 100,
-    waveHeight: 100,
-    xmin: -10,
-    xmax: 10,
-    ymin: -10,
-    ymax: 10,
-    canvas: offscreen
+
+const workerProgram = () => {
+  importScripts("http://localhost:4000/build/nami.js");
+  onmessage = (e) => {
+
+    const canvas = e.data.elem;
+    console.log(canvas);
+    const scenario = {
+      xmin: -121,
+      xmax: 0,
+      ymin: -60,
+      ymax: 60,
+      earthquake: {
+        ce: -12, //centroid N coordinate, e
+        cn: -35,
+        Mw: 9.0
+      },
+    };
+
+
+    const nami = new Nami(scenario, {canvas}, {
+      modelSimulationWillStart: (model, thisController) => {
+        thisController.paused = true;
+    }
+    });
+
+  }
 }
 
-let output = {
-    stopTime: 10,
-    displayWidth: 512,
-    displayHeight: 512,
+
+const createWorker = fn => {
+  const URL = window.URL || window.webkitURL;
+  return new Worker(URL.createObjectURL(new Blob(["(" + fn + ")()"])));
 };
 
-let recordedBlobs = [];
+const mainProgram = () => {
+  const canvas = document.querySelector("#simulation-canvas");
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
 
-lifeCycle = {
-    dataWasLoaded: (model) => {
-        
-        console.log(offscreen);
-        
-        // offscreen.convertToBlob().then(function(blob) {
-        //     let video = document.getElementById('video');
-        //     var superBuffer = new Blob(recordedBlobs, {type: 'video/webm'});
-        //     video.src = window.URL.createObjectURL(superBuffer);
-        //     console.log(blob);
-        // });
-
-    },
-
-    modelStepDidFinish: (model, controller) => {
-        console.log(model.discretization.stepNumber);
-        return false;
-    }
+  worker = createWorker(workerProgram);
+  const offscreen = canvas.transferControlToOffscreen();
+  worker.postMessage({ msg: "start", elem: offscreen }, [offscreen]);
 }
 
-let thismodel = new NAMI.app(data, output, lifeCycle);
+

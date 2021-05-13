@@ -31,10 +31,10 @@ let Model = function(data) {
   if (data.canvas != undefined) {
     canvas = data.canvas;
   } else {
-    canvas = document.createElement("canvas");
+    canvas = self.document ? document.createElement("canvas") : undefined;
+    canvas.width = pcolorDisplay.width;
+    canvas.height = pcolorDisplay.height;
   }
-  canvas.width = pcolorDisplay.width;
-  canvas.height = pcolorDisplay.height;
 
   try {
     gl = canvas.getContext("webgl2", { premultipliedAlpha: false });
@@ -48,7 +48,7 @@ let Model = function(data) {
     gl.viewportHeight = canvas.height;
   } catch (e) {}
   if (!gl) {
-    alert("Could not initialise Webgl.");
+    console.log("Could not initialise Webgl.");
   }
 
   gl.enable(gl.DEPTH_TEST);
@@ -686,7 +686,6 @@ let Model = function(data) {
       return colormap.rgba;
     },
     set earthquake(newEarthquake) {
-      console.log(gl);
       wave.clearBuffers();
       earthquake = newEarthquake;
       setEarthquake();
