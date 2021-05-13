@@ -89,7 +89,8 @@ export function getArrayFromImage(image, bathymetryMetadata) {
   // convert to normal float numbers
   imageData = [...imageData];
 
-  imageData = imageData.map(value => {
+  imageData = [[canvas.height], [canvas.width], imageData].flat().map((value, index) => {
+    if (index < 2) return value;
     return (
       (value / 255.0) * (bathymetryMetadata.zmax - bathymetryMetadata.zmin) +
       bathymetryMetadata.zmin

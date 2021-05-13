@@ -18,11 +18,7 @@ const workerProgram = () => {
     };
 
 
-    const nami = new Nami(scenario, {canvas}, {
-      modelSimulationWillStart: (model, thisController) => {
-        thisController.paused = true;
-    }
-    });
+    const nami = new Nami(scenario, {canvas});
 
   }
 }
