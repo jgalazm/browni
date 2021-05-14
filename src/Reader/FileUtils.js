@@ -66,9 +66,17 @@ export function getArrayFromFile(url, callback, format = "ascii") {
 export function getArrayFromImage(image, bathymetryMetadata) {
   image.crossOrigin = "Anonymous";
   
-  let canvas = document.createElement("canvas");
-  canvas.height = image.height;
-  canvas.width = image.width;
+  let canvas;
+
+  if(typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope ){ 
+    canvas = new OffscreenCanvas(image.width, image.height);
+  }
+  else {
+    canvas = document.createElement("canvas");
+    canvas.height = image.height;
+    canvas.width = image.width;
+  }
+
 
   let ctx = canvas.getContext("2d");
   ctx.drawImage(image, 0, 0);
@@ -81,15 +89,17 @@ export function getArrayFromImage(image, bathymetryMetadata) {
   // convert to normal float numbers
   imageData = [...imageData];
 
-  imageData = imageData.map(value => {
+  imageData = [[canvas.height], [canvas.width], imageData].flat().map((value, index) => {
+    if (index < 2) return value;
     return (
       (value / 255.0) * (bathymetryMetadata.zmax - bathymetryMetadata.zmin) +
       bathymetryMetadata.zmin
     );
   });
 
-  let matrix = [];
-  while (imageData.length > 0) matrix.push(imageData.splice(0, image.width));
+  // let matrix = [];
+  // while (imageData.length > 0) matrix.push(imageData.splice(0, image.width));
 
-  return matrix;
+  // return matrix;
+  return imageData;
 }

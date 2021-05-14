@@ -321,6 +321,7 @@ const okadaShaderString = `
 
                 gl_FragColor = vec4(value,0.0,0.0, bathymetry+value);
 
+
             }
         
         `;

@@ -15,15 +15,14 @@ const Reader = function(data, outputData) {
         );
       }
       fetch(bathymetryInput)
-      .then(r => r.blob())
-      .then(blob => {
-        const img = URL.createObjectURL(blob);
-        const imgElement = document.createElement('img');
-        imgElement.setAttribute('src', img);
-        imgElement.onload = () =>{
-          resolve(getArrayFromImage(imgElement, bathymetryMetadata));
-        };
-      });
+      .then(r => {
+        return r.blob()
+      })
+      .then(blob => createImageBitmap(blob))
+      .then(bitmap => {
+        resolve(getArrayFromImage(bitmap, bathymetryMetadata));
+      })
+
 
     } else {
       getArrayFromFile(
@@ -312,7 +311,8 @@ const Reader = function(data, outputData) {
     pois,
     colormap,
     stopTime,
-    loop
+    loop,
+    canvas: outputData.canvas
   };
 };
 
