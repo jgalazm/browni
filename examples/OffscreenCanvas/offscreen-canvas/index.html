@@ -2,5 +2,11 @@
         <canvas id="simulation-canvas" width="500" height="500"></canvas>
         <script src="/build/nami.js"></script>
         <script src="./main.js"></script>
-    
+        <button onClick="cycleSpeed()">Skip +10 frames</button>
+        <p id="speed-counter"></p>
+        <span id="timer"></span>
+
+        <div class="slidecontainer">
+            <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+        </div>
     </body>
