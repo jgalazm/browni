@@ -22,7 +22,7 @@ const workerProgram = (canvas) => {
     },
   };
 
-  const nami = new Nami(scenario, { canvas, loop: true }, {
+  const nami = new Nami(scenario, { canvas}, {
     modelStepDidFinish: (model, thisController) => {
       if (model.discretization.stepNumber % simulationParameters.skip === 0) {
         return false;
@@ -34,19 +34,19 @@ const workerProgram = (canvas) => {
 }
 
 const cycleSpeed = () => {
-  simulationParameters.skip = simulationParameters.skip == 1 ? 51 : 1;
+  simulationParameters.skip = simulationParameters.skip == 1 ? 50 : 1;
   document.querySelector("#speed-counter").innerText = `Skipping: ${simulationParameters.skip-1} frames`;
 }
 
 
 let timeEl;
-let t1 = Date.now();
-let t2;
+let t1 = 0
 function tickTimer() {
   t2 = Date.now();
-  const diff = t2 - t1;
+  console.log(t2);
+  timeEl.innerText = `${t2.toFixed(2)} | approx ${(1000/(t2-t1)).toFixed(2)} fps`;
   t1 = t2;
-  timeEl.innerText = `approx ${(1000/diff).toFixed(1)} fps`;
+
   window.timerRafId = window.requestAnimationFrame(tickTimer);
 }
 
@@ -57,7 +57,7 @@ const mainProgram = () => {
 
   workerProgram(canvas);
   timeEl = document.getElementById('timer');
-  requestAnimationFrame(tickTimer);
+  tickTimer();
 }
 
 
