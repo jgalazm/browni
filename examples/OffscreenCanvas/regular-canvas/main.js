@@ -34,8 +34,20 @@ const workerProgram = (canvas) => {
 }
 
 const cycleSpeed = () => {
-  simulationParameters.skip = (simulationParameters.skip + 10) % 110;
+  simulationParameters.skip = simulationParameters.skip == 1 ? 51 : 1;
   document.querySelector("#speed-counter").innerText = `Skipping: ${simulationParameters.skip-1} frames`;
+}
+
+
+let timeEl;
+let t1 = Date.now();
+let t2;
+function tickTimer() {
+  t2 = Date.now();
+  const diff = t2 - t1;
+  t1 = t2;
+  timeEl.innerText = `approx ${(1000/diff).toFixed(1)} fps`;
+  window.timerRafId = window.requestAnimationFrame(tickTimer);
 }
 
 const mainProgram = () => {
@@ -44,6 +56,8 @@ const mainProgram = () => {
   canvas.height = canvas.offsetHeight;
 
   workerProgram(canvas);
+  timeEl = document.getElementById('timer');
+  requestAnimationFrame(tickTimer);
 }
 
 
