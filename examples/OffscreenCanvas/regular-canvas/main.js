@@ -22,7 +22,7 @@ const workerProgram = (canvas) => {
     },
   };
 
-  const nami = new Nami(scenario, { canvas }, {
+  const nami = new Nami(scenario, { canvas, loop: true }, {
     modelStepDidFinish: (model, thisController) => {
       if (model.discretization.stepNumber % simulationParameters.skip === 0) {
         return false;
